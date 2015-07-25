@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #F5F5F5;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+		<script type="text/javascript" src="Common/webgl-utils.js"></script>
+		<script type="text/javascript" src="Common/initShaders.js"></script>
+		<script type="text/javascript" src="Common/MV.js"></script>
+		<script type="text/javascript" src="Common/dat.gui.min.js"></script>
+		
+		<script>
+			function getParameterByName(name) {
+			    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+			    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+			}
+			function addScriptToDOM(a_script) {
+				if ('undefined' !== typeof a_script) {
+					var thescript = document.createElement('script');
+					thescript.setAttribute('type','text/javascript');
+					thescript.setAttribute('src',a_script);
+					document.getElementsByTagName('head')[0].appendChild(thescript);
+				}
+				else {
+					alert(loadScript);
+				}
+			}
+			var loadScript = getParameterByName('load');
+			addScriptToDOM(loadScript);
+			var loadShaderScript = getParameterByName('loadShader');
+			addScriptToDOM(loadShaderScript);
+			
+		</script>
+	</head>
+
+	<body>
+		<canvas id="gl-canvas" width="512" height="512">
+			Oops ... your browser doesn't support the HTML5 canvas element
+		</canvas>
+		<script>
+			(function() {
+				elem = document.createElement("div");
+				elem.id = 'myID';
+				elem.innerHTML =
+					['<br><form name="run"><label>&nbsp;Select script:</label>',
+							'<select name="demo"',
+							' OnChange="location.href=run.demo.options[selectedIndex].value">',
+							'	 <option selected>Select demo',
+							'	 	<option value="?load=001_Triangle/script.js&loadShader=001_Triangle/shaders.js">Lesson 001 - One Triangle',
+							'	 	<option value="?load=002_Triangles/script.js&loadShader=002_Triangles/shaders.js">Lesson 002 - Two Triangles',
+							'	 	<option value="?load=003_Color/script.js&loadShader=003_Color/shaders.js">Lesson 003 Maxwell Triangle',
+							'</select>',
+
+							'or',
+							'<select name="exercises"',
+							' OnChange="location.href=run.exercises.options[selectedIndex].value">',
+							'	 <option selected>Select exercise',
+							'	 <option value="?load=Homework_001/script.js&loadShader=Homework_001/shaders.js">Problem 001 Subdivision Triangles',
+							'	 <option value="?load=Homework_002/script.js&loadShader=Homework_002/shaders.js">Problem 002 Interactive Drawing',
+							'</select>'].join('\n');
+
+					if ('undefined' !== typeof loadScript && loadScript !== null) {
+						elem.innerHTML = elem.innerHTML + "&nbsp;Showing " + loadScript;
+					}
+					elem.innerHTML = elem.innerHTML + "</form><br/>";
+
+					document.body.insertBefore(elem,document.body.childNodes[0])
+			})();
+		</script>
+	</body>
+
+</html>
