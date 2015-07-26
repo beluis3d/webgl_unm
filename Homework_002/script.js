@@ -2,11 +2,11 @@
 var gl;
 var points = [];
 var curves = [];
-var colors = [];
 
 var bMouseDown = false;
 var drawColor = "ff0000";
 var drawSize = 5.0;
+var drawStyle = 0; //filled=0, dotted=1, dashed=2
 
 var a_Position, u_Color, u_Size;
 var vBuffer, cBuffer;
@@ -19,7 +19,6 @@ window.onload = function init() {
 
 	setupGui(canvas);
 	setupData();
-	//update(x,y);
 	render();
 }
 
@@ -31,7 +30,11 @@ function setupGui(canvas) {
 		curves.push({ start:points.length, size:0, color:drawColor, pt_size:drawSize }); 
 	};
 	window.onmouseup = function(event) { 
-		bMouseDown = false; 
+		if (bMouseDown) {
+			bMouseDown = false; 
+			if (drawStyle == 1) dottifyLastCurve();
+			else if (drawStyle == 2) dashifyLastCurve();
+		}
 	};
 	window.onmousemove = function(event) { 
 		if (bMouseDown) {
@@ -48,7 +51,10 @@ function setupGui(canvas) {
 	};
 
 	effectController = {newDrawColor: drawColor,
-						newDrawSize: drawSize };
+						newDrawSize: drawSize,
+						newUndoDraw: undoDraw,
+						newInvertColors: invertColors,
+						newDrawStyle: drawStyle };
 	var gui = new dat.GUI();
 	var colorOpts = {Red:"ff0000", Green:"00ff00", Blue:"0000ff", Yellow: "ffff00", Cyan:"00ffff", Magenta:"ff00ff", White:"ffffff"}
 	gui.add(effectController, "newDrawColor", colorOpts).name("Color").onChange(function(value) {
@@ -56,11 +62,116 @@ function setupGui(canvas) {
 			drawColor = effectController.newDrawColor;
 		}
 	});
-	gui.add(effectController, "newDrawSize", 1.0, 30.0).step(1.0).name("Size").onChange(function(value) {
+	gui.add(effectController, "newDrawSize", 3.0, 30.0).step(1.0).name("Size").onChange(function(value) {
 		if (effectController.newDrawSize !== drawSize) {
 			drawSize = effectController.newDrawSize;
 		}
 	});
+	gui.add(effectController, "newUndoDraw").name("Undo Draw");
+	gui.add(effectController, "newInvertColors").name("Invert Colors");
+	gui.add(effectController, "newDrawStyle", {Filled:0, Dotted:1, Dashed:2}).name("Style").onChange(function(value) {
+		if (effectController.newDrawStyle !== drawStyle) {
+			drawStyle = effectController.newDrawStyle;
+		}
+	});
+}
+
+function dottifyLastCurve() {
+	var lastCurve = curves[curves.length-1];
+	step = 0.01*lastCurve.pt_size;
+	
+	for (var i = lastCurve.start; i < lastCurve.start+lastCurve.size-1; i++) {
+		if (points[i] !== undefined) {
+			var firstPoint = points[i];
+			var _flag = true;
+			for (var k = i+1; k < lastCurve.start+lastCurve.size && _flag; k++) {
+				var secondPoint = points[k];
+				var path_vec = subtract(secondPoint, firstPoint);
+				var path_len = length(path_vec);
+				
+				if (path_len < step) {
+					points[k] = undefined;
+				} else {
+					_flag = false;
+				}
+			}
+		}
+	}
+
+	for (var i = lastCurve.start; i < lastCurve.start+lastCurve.size; i++) {
+		if (points[i] === undefined) {
+			points.splice(i,1);
+			lastCurve.size--;
+			i--;
+		}
+	}
+
+	update();
+	render();
+}
+
+function dashifyLastCurve() {
+	var lastCurve = curves[curves.length-1];
+	step = 0.01*lastCurve.pt_size;
+	
+	for (var i = lastCurve.start; i < lastCurve.start+lastCurve.size-1; i++) {
+		if (points[i] !== undefined) {
+			var firstPoint = points[i];
+			var _flag = true;
+			var _flag2 = true;
+			for (var k = i+1; k < lastCurve.start+lastCurve.size && _flag; k++) {
+				var secondPoint = points[k];
+				var path_vec = subtract(secondPoint, firstPoint);
+				var path_len = length(path_vec);
+				
+				if (_flag2) { if (path_len < step) { step=step; } else { _flag2 = false; i=k; firstPoint=secondPoint; } }
+				else { if (path_len < step) { points[k] = undefined; } else { _flag = false; } }
+			}
+		}
+	}
+
+	for (var i = lastCurve.start; i < lastCurve.start+lastCurve.size; i++) {
+		if (points[i] === undefined) {
+			points.splice(i,1);
+			lastCurve.size--;
+			i--;
+		}
+	}
+
+	update();
+	render();
+}
+
+function undoDraw() {
+	if (curves.length == 0)
+		return;
+
+	var poppedCurve = curves.pop();
+	for(var i = 0; i < poppedCurve.size; i++)
+		points.pop();
+
+
+	render();
+}
+
+function invertColors() {
+	for (var i = 0; i < curves.length; i++) {
+		switch(curves[i].color) {
+			case "ff0000": curves[i].color = "00ffff"; break;
+			case "00ff00": curves[i].color = "ff00ff"; break;
+			case "0000ff": curves[i].color = "ffff00"; break;
+			
+			case "ffff00": curves[i].color = "0000ff"; break;
+			case "00ffff": curves[i].color = "ff0000"; break;
+			case "ff00ff": curves[i].color = "00ff00"; break;
+
+			case "ffffff": curves[i].color = "000000"; break;
+			case "000000": curves[i].color = "ffffff"; break;
+			default: break;
+		}
+	}
+
+	render();
 }
 
 function setupData() {
@@ -77,13 +188,32 @@ function setupData() {
 }
 
 function update(x,y) {
-	points.push(vec2(x,y));
-	var rgb = hexToRgb(drawColor);
-	colors.push(vec3( rgb.r, rgb.g, rgb.b ));
-	curves[curves.length-1].size++;
-
-	gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+	if (x!==undefined && y!==undefined) calculatePoints(x,y);
 	gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
+}
+
+function calculatePoints(x,y) {
+	if (curves[curves.length-1].size == 0) {
+		points.push(vec2(x,y));
+		curves[curves.length-1].size++;
+		return;
+	}
+
+	var step = 0.01;
+	var lastpoint = points[points.length-1];
+	var newpoint = vec2(x,y);
+	var path_vec = subtract(newpoint, lastpoint);
+	var path_len = length(path_vec);
+
+	for (var i = 1; step*i < path_len; i++) {
+		var add_vec = scale( (step*i/path_len), path_vec);
+		var new_vec = add(lastpoint, add_vec);
+		
+		points.push(new_vec);
+		curves[curves.length-1].size++;
+	}
+	points.push(newpoint);
+	curves[curves.length-1].size++;
 }
 
 function render() {
