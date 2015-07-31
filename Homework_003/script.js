@@ -1,7 +1,11 @@
 // script.js
 
 var gl;
-var points = createSpherePoints();
+var curves = [];
+var points = [];
+var topPoints = [];
+var botPoints = [];
+createSpherePoints();
 var affine = mat4();
 
 var effectController;
@@ -27,6 +31,7 @@ window.onload = function init() {
 	var canvas = document.getElementById("gl-canvas");
 	gl = WebGLUtils.setupWebGL(canvas);
 	gl.program = initShadersFromSource(gl, VSHADER_SOURCE, FSHADER_SOURCE);
+	gl.program2 = initShadersFromSource(gl, VSHADER_SOURCE, FSHADER_SOURCE2);
 	gl.useProgram(gl.program);
 
 	setupGUI();
@@ -138,10 +143,9 @@ function setupData() {
 }
 
 function update() {
-
 	updateSphereAffineMatrix();
 
-	gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(points.concat(topPts).concat(botPts)), gl.STATIC_DRAW);
 	gl.vertexAttrib4f( si.a_Affine+0, affine[0][0], affine[1][0], affine[2][0], affine[3][0] );
 	gl.vertexAttrib4f( si.a_Affine+1, affine[0][1], affine[1][1], affine[2][1], affine[3][1] );
 	gl.vertexAttrib4f( si.a_Affine+2, affine[0][2], affine[1][2], affine[2][2], affine[3][2] );
@@ -150,7 +154,18 @@ function update() {
 
 function render() {
 	gl.clear(gl.COLOR_BUFFER_BIT);
-	gl.drawArrays(gl.POINTS, 0, points.length);	
+	gl.useProgram(gl.program);
+	for (var i = 0; i < curves.length; i++) {
+		gl.drawArrays(gl.TRIANGLE_STRIP, curves[i].start, curves[i].size);	
+	}
+	gl.drawArrays(gl.TRIANGLE_FAN, points.length, topPts.length);
+	gl.drawArrays(gl.TRIANGLE_FAN, points.length+topPts.length, botPts.length);
+
+
+	gl.useProgram(gl.program2);
+	for (var i = 0; i < curves.length; i++) {
+		gl.drawArrays(gl.LINE_STRIP, curves[i].start, curves[i].size);	
+	}
 }
 
 function translateSphere(x, y, z) { 
@@ -163,23 +178,48 @@ function rotateSphere(x, y, z) {
 	ap.rotate = mult(_z, mult(_y, _x));
 }
 function scaleSphere(x, y, z) { 
-	ap.scale = scalem(x, y, z); 
+	ap.scale = scalem(x, y, z);
 }
 function updateSphereAffineMatrix() {
 	affine = mult(ap.translate, mult(ap.rotate, ap.scale));
 }
 
 function createSpherePoints() {
-	var steps = 10.0;
-	var delta = 360.0/steps;
+	var steps = 12.0;
+	var di = 360.0/steps;
+	var dk = 180.0/steps;
 	var radius = 1.0;
 
-	var ret = [];
-	for (var i = 0.0; i <= 360.0; i+=delta) {
-		var x = radius*Math.cos(radians(i));
-		var y = radius*Math.sin(radians(i));
-		ret.push( vec3(x,y,0.0) );
+	for (var k = 0+dk; k < 180.0-dk; k+=dk) {
+		var kCurve = { start: points.length, size: 0 };
+		for (var i = 0.0; i <= 360.0; i+=di) {
+			var p1 = polarToCartesian(radius,i,k);
+			var p2 = polarToCartesian(radius,i,k+dk);
+			
+			kCurve.size+=2;
+			points.push( p1, p2 );
+		}
+		curves.push( kCurve );
 	}
 
-	return ret;
+	var botPt = polarToCartesian(radius,0.0,0.0);
+	botPts = [botPt];
+	for(var i = 0; i <= 360.0; i+=di) {
+		var p1 = polarToCartesian(radius,i,0.0+dk);
+		botPts.push(p1);
+	}
+	var topPt = polarToCartesian(radius,360.0,0.0);
+	topPts = [topPt];
+	for(var i = 0; i <= 360.0; i+=di) {
+		var p1 = polarToCartesian(radius,i,180.0-dk);
+		topPts.push(p1);
+	}
+}
+
+function polarToCartesian(radius, theta, phi) {
+	var x = radius*Math.cos(radians(theta))*Math.sin(radians(phi));
+	var y = radius*Math.sin(radians(theta))*Math.sin(radians(phi));
+	var z = radius*Math.cos(radians(phi));
+	return vec3(x,y,z);
+
 }
