@@ -1,7 +1,7 @@
 // script.js
 
-
 // --- Sphere Class --- //
+
 var Sphere = function() {
 	this.solid = {
 		curves: [],
@@ -25,7 +25,7 @@ var Sphere = function() {
 	};
 
 	this.ap = { // affineProperties
-		affine: mat4(), // the collection of affine transformations (translate, rotate, & scale)
+		affine: mat4(), 		// the collection of affine transformations (translate, rotate, & scale)
 		translate: mat4(),
 		rotate: mat4(),
 		scale: mat4()
@@ -40,7 +40,7 @@ Sphere.prototype.createPoints = function() {
 	var dk = 180.0/steps;
 	var radius = 1.0;
 
-	// TRIANGLE POINTS
+	// Triangle Points
 	for (var k = 0+dk; k < 180.0-dk; k+=dk) {
 		var kCurve = { start: this.solid.points.length, size: 0 };
 		for (var i = 0.0; i <= 360.0; i+=di) {
@@ -65,7 +65,7 @@ Sphere.prototype.createPoints = function() {
 		this.solid.topPoints.push(p1);
 	}
 
-	//WIRE POINTS
+	//Wire Points
 	for (var k = 0+dk; k < 180.0-dk; k+=dk) {
 		var kWireCurve = { start: this.wire.points.length, size: 0 };
 		for (var i = 0.0; i <= 360.0; i+=2*di) {
@@ -165,7 +165,8 @@ Sphere.prototype.render = function() {
 // --- Sphere Class --- //
 
 var gl;
-var spheres = [new Sphere()];
+var spheres = [];
+var bUpdate = true;
 
 var effectController;
 var activeIndex = 0;
@@ -180,14 +181,17 @@ window.onload = function init() {
 	gl.program2 = initShadersFromSource(gl, VSHADER_SOURCE2, FSHADER_SOURCE2);
 	gl.useProgram(gl.program);
 
+	spheres.push( new Sphere() );
+	spheres.push( new Sphere() );
+
 	setupGUI();
 	setupData();
-	update();
-	requestAnimFrame(render);
+	requestAnimFrame(updateAndRender);
 }
 
 function setupGUI() {
 	var effectController = {
+		newActiveIndex: activeIndex,
 		newTranslateX: translateVec[0],
 		newTranslateY: translateVec[1],
 		newTranslateZ: translateVec[2],
@@ -200,46 +204,54 @@ function setupGUI() {
 	};
 
 	var gui = new dat.GUI();
+	gui.add(effectController, 'newActiveIndex', {First:0, Second:1}).name("Active Element").onChange(function(value) {
+		if (effectController.newActiveIndex !== activeIndex) {
+			activeIndex = effectController.newActiveIndex;
+			//TODO: make all of the variables update to the correct object's parameters
+			//update();
+		}
+	});
+
 	gui.add( effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').onChange(function(value) {
 		if (effectController.newTranslateX !== translateVec[0]) {
 			translateVec[0] = effectController.newTranslateX;
 			spheres[activeIndex].translate(translateVec[0], translateVec[1], translateVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 	gui.add( effectController, 'newTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').onChange(function(value) {
 		if (effectController.newTranslateY !== translateVec[1]) {
 			translateVec[1] = effectController.newTranslateY;
 			spheres[activeIndex].translate(translateVec[0], translateVec[1], translateVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 	gui.add( effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').onChange(function(value) {
 		if (effectController.newTranslateZ !== translateVec[2]) {
 			translateVec[2] = effectController.newTranslateZ;
 			spheres[activeIndex].translate(translateVec[0], translateVec[1], translateVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 	gui.add( effectController, 'newRotateX', -180.0, 180.0).step(1.0).name('RotateX').onChange(function(value) {
 		if (effectController.newRotateX !== rotateVec[0]) {
 			rotateVec[0] = effectController.newRotateX;
 			spheres[activeIndex].rotate(rotateVec[0], rotateVec[1], rotateVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 	gui.add( effectController, 'newRotateY', -180.0, 180.0).step(1.0).name('RotateY').onChange(function(value) {
 		if (effectController.newRotateY !== rotateVec[1]) {
 			rotateVec[1] = effectController.newRotateY;
 			spheres[activeIndex].rotate(rotateVec[0], rotateVec[1], rotateVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 	gui.add( effectController, 'newRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').onChange(function(value) {
 		if (effectController.newRotateZ !== rotateVec[2]) {
 			rotateVec[2] = effectController.newRotateZ;
 			spheres[activeIndex].rotate(rotateVec[0], rotateVec[1], rotateVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 
@@ -247,21 +259,21 @@ function setupGUI() {
 		if (effectController.newScaleX !== scaleVec[0]) {
 			scaleVec[0] = effectController.newScaleX;
 			spheres[activeIndex].scale(scaleVec[0], scaleVec[1], scaleVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 	gui.add( effectController, 'newScaleY', 0.0, 2.0).step(0.1).name('ScaleY').onChange(function(value) {
 		if (effectController.newScaleY !== scaleVec[1]) {
 			scaleVec[1] = effectController.newScaleY;
 			spheres[activeIndex].scale(scaleVec[0], scaleVec[1], scaleVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 	gui.add( effectController, 'newScaleZ', 0.0, 2.0).step(0.1).name('ScaleZ').onChange(function(value) {
 		if (effectController.newScaleZ !== scaleVec[2]) {
 			scaleVec[2] = effectController.newScaleZ;
 			spheres[activeIndex].scale(scaleVec[0], scaleVec[1], scaleVec[2]);
-			update();
+			bUpdate = true;
 		}
 	});
 }
@@ -275,19 +287,19 @@ function setupData() {
 	}
 }
 
-function update() {
+function updateAndRender() {
+	if (!bUpdate) {
+		requestAnimFrame(updateAndRender);
+		return;
+	}
+
+	bUpdate = false;
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	for (var i = 0; i < spheres.length; i++) {
 		spheres[i].update();
-	}	
-}
-
-function render() {
-	gl.clear(gl.COLOR_BUFFER_BIT);
-	
-	for (var i = 0; i < spheres.length; i++) {
 		spheres[i].render();
 	}
-	requestAnimFrame(render);
+	requestAnimFrame(updateAndRender);
 }
 
 function polarToCartesian(radius, theta, phi) {
@@ -295,5 +307,4 @@ function polarToCartesian(radius, theta, phi) {
 	var y = radius*Math.sin(radians(theta))*Math.sin(radians(phi));
 	var z = radius*Math.cos(radians(phi));
 	return vec3(x,y,z);
-
 }
