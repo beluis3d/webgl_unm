@@ -31,6 +31,12 @@ var Sphere = function() {
 		scale: mat4()
 	};
 
+	this.ui = {
+		translate: vec3(0.0, 0.0, 0.0),
+		rotate: vec3(0.0, 0.0, 0.0),
+		scale: vec3(1.0, 1.0, 1.0)
+	}
+
 	this.createPoints(); 
 }
 
@@ -104,19 +110,22 @@ Sphere.prototype.setupData = function() {
 	this.si.a_Affine = gl.getAttribLocation(gl.program, "a_Affine");
 }
 
-Sphere.prototype.translate = function(x, y, z) { 
-	this.ap.translate = translate(x, y, z); 
+Sphere.prototype.translate = function(axis, value) { 
+	this.ui.translate[axis] = value;
+	this.ap.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
 }
 
-Sphere.prototype.rotate = function(x, y, z) { 
-	var _x = rotate(x, 1.0, 0.0, 0.0);
-	var _y = rotate(y, 0.0, 1.0, 0.0);
-	var _z = rotate(z, 0.0, 0.0, 1.0); 
+Sphere.prototype.rotate = function(axis, value) {
+	this.ui.rotate[axis] = value;
+	var _x = rotate(this.ui.rotate[0], 1.0, 0.0, 0.0);
+	var _y = rotate(this.ui.rotate[1], 0.0, 1.0, 0.0);
+	var _z = rotate(this.ui.rotate[2], 0.0, 0.0, 1.0); 
 	this.ap.rotate = mult(_z, mult(_y, _x));
 }
 
-Sphere.prototype.scale = function(x, y, z) { 
-	this.ap.scale = scalem(x, y, z);
+Sphere.prototype.scale = function(axis, value) {
+	this.ui.scale[axis] = value; 
+	this.ap.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
 }
 
 Sphere.prototype.updateAffineMatrix = function() {
@@ -170,9 +179,6 @@ var bUpdate = true;
 
 var effectController;
 var activeIndex = 0;
-var translateVec = vec3(0.0, 0.0, 0.0);
-var rotateVec = vec3(0.0, 0.0, 0.0);
-var scaleVec = vec3(1.0, 1.0, 1.0);
 
 window.onload = function init() {
 	var canvas = document.getElementById("gl-canvas");
@@ -192,87 +198,85 @@ window.onload = function init() {
 function setupGUI() {
 	var effectController = {
 		newActiveIndex: activeIndex,
-		newTranslateX: translateVec[0],
-		newTranslateY: translateVec[1],
-		newTranslateZ: translateVec[2],
-		newRotateX: rotateVec[0],
-		newRotateY: rotateVec[1],
-		newRotateZ: rotateVec[2],
-		newScaleX: scaleVec[0],
-		newScaleY: scaleVec[1],
-		newScaleZ: scaleVec[2]
+		newTranslateX: 0.0,
+		newTranslateY: 0.0,
+		newTranslateZ: 0.0,
+		newRotateX: 0.0,
+		newRotateY: 0.0,
+		newRotateZ: 0.0,
+		newScaleX: 1.0,
+		newScaleY: 1.0,
+		newScaleZ: 1.0
 	};
 
 	var gui = new dat.GUI();
 	gui.add(effectController, 'newActiveIndex', {First:0, Second:1}).name("Active Element").onChange(function(value) {
 		if (effectController.newActiveIndex !== activeIndex) {
 			activeIndex = effectController.newActiveIndex;
-			//TODO: make all of the variables update to the correct object's parameters
-			//update();
+
+			effectController.newTranslateX = spheres[activeIndex].ui.translate[0];
+			effectController.newTranslateY = spheres[activeIndex].ui.translate[1];
+			effectController.newTranslateZ = spheres[activeIndex].ui.translate[2];
+			effectController.newRotateX = spheres[activeIndex].ui.rotate[0];
+			effectController.newRotateY = spheres[activeIndex].ui.rotate[1];
+			effectController.newRotateZ = spheres[activeIndex].ui.rotate[2];
+			effectController.newScaleX = spheres[activeIndex].ui.scale[0];
+			effectController.newScaleY = spheres[activeIndex].ui.scale[1];
+			effectController.newScaleZ = spheres[activeIndex].ui.scale[2];
 		}
 	});
 
-	gui.add( effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').onChange(function(value) {
-		if (effectController.newTranslateX !== translateVec[0]) {
-			translateVec[0] = effectController.newTranslateX;
-			spheres[activeIndex].translate(translateVec[0], translateVec[1], translateVec[2]);
+	gui.add( effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').listen().onChange(function(value) {
+		if (effectController.newTranslateX !== spheres[activeIndex].ui.translate[0]) {
+			spheres[activeIndex].translate(0, effectController.newTranslateX);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').onChange(function(value) {
-		if (effectController.newTranslateY !== translateVec[1]) {
-			translateVec[1] = effectController.newTranslateY;
-			spheres[activeIndex].translate(translateVec[0], translateVec[1], translateVec[2]);
+	gui.add( effectController, 'newTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').listen().onChange(function(value) {
+		if (effectController.newTranslateY !== spheres[activeIndex].ui.translate[1]) {
+			spheres[activeIndex].translate(1, effectController.newTranslateY);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').onChange(function(value) {
-		if (effectController.newTranslateZ !== translateVec[2]) {
-			translateVec[2] = effectController.newTranslateZ;
-			spheres[activeIndex].translate(translateVec[0], translateVec[1], translateVec[2]);
+	gui.add( effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').listen().onChange(function(value) {
+		if (effectController.newTranslateZ !== spheres[activeIndex].ui.translate[2]) {
+			spheres[activeIndex].translate(2, effectController.newTranslateZ);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newRotateX', -180.0, 180.0).step(1.0).name('RotateX').onChange(function(value) {
-		if (effectController.newRotateX !== rotateVec[0]) {
-			rotateVec[0] = effectController.newRotateX;
-			spheres[activeIndex].rotate(rotateVec[0], rotateVec[1], rotateVec[2]);
+	gui.add( effectController, 'newRotateX', -180.0, 180.0).step(1.0).name('RotateX').listen().onChange(function(value) {
+		if (effectController.newRotateX !== spheres[activeIndex].ui.rotate[0]) {
+			spheres[activeIndex].rotate(0, effectController.newRotateX);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newRotateY', -180.0, 180.0).step(1.0).name('RotateY').onChange(function(value) {
-		if (effectController.newRotateY !== rotateVec[1]) {
-			rotateVec[1] = effectController.newRotateY;
-			spheres[activeIndex].rotate(rotateVec[0], rotateVec[1], rotateVec[2]);
+	gui.add( effectController, 'newRotateY', -180.0, 180.0).step(1.0).name('RotateY').listen().onChange(function(value) {
+		if (effectController.newRotateY !== spheres[activeIndex].ui.rotate[1]) {
+			spheres[activeIndex].rotate(1, effectController.newRotateY);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').onChange(function(value) {
-		if (effectController.newRotateZ !== rotateVec[2]) {
-			rotateVec[2] = effectController.newRotateZ;
-			spheres[activeIndex].rotate(rotateVec[0], rotateVec[1], rotateVec[2]);
+	gui.add( effectController, 'newRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').listen().onChange(function(value) {
+		if (effectController.newRotateZ !== spheres[activeIndex].ui.rotate[2]) {
+			spheres[activeIndex].rotate(2, effectController.newRotateZ);
 			bUpdate = true;
 		}
 	});
-
-	gui.add( effectController, 'newScaleX', 0.0, 2.0).step(0.1).name('ScaleX').onChange(function(value) {
-		if (effectController.newScaleX !== scaleVec[0]) {
-			scaleVec[0] = effectController.newScaleX;
-			spheres[activeIndex].scale(scaleVec[0], scaleVec[1], scaleVec[2]);
+	gui.add( effectController, 'newScaleX', 0.0, 2.0).step(0.1).name('ScaleX').listen().onChange(function(value) {
+		if (effectController.newScaleX !== spheres[activeIndex].ui.scale[0]) {
+			spheres[activeIndex].scale(0, effectController.newScaleX);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newScaleY', 0.0, 2.0).step(0.1).name('ScaleY').onChange(function(value) {
-		if (effectController.newScaleY !== scaleVec[1]) {
-			scaleVec[1] = effectController.newScaleY;
-			spheres[activeIndex].scale(scaleVec[0], scaleVec[1], scaleVec[2]);
+	gui.add( effectController, 'newScaleY', 0.0, 2.0).step(0.1).name('ScaleY').listen().onChange(function(value) {
+		if (effectController.newScaleY !== spheres[activeIndex].ui.scale[1]) {
+			spheres[activeIndex].scale(1, effectController.newScaleY);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newScaleZ', 0.0, 2.0).step(0.1).name('ScaleZ').onChange(function(value) {
-		if (effectController.newScaleZ !== scaleVec[2]) {
-			scaleVec[2] = effectController.newScaleZ;
-			spheres[activeIndex].scale(scaleVec[0], scaleVec[1], scaleVec[2]);
+	gui.add( effectController, 'newScaleZ', 0.0, 2.0).step(0.1).name('ScaleZ').listen().onChange(function(value) {
+		if (effectController.newScaleZ !== spheres[activeIndex].ui.scale[2]) {
+			spheres[activeIndex].scale(2, effectController.newScaleZ);
 			bUpdate = true;
 		}
 	});
