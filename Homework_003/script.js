@@ -1,8 +1,10 @@
 // script.js
 
-// --- Sphere Class --- //
+// --- Begin: Sphere Class --- //
 
-var Sphere = function() {
+var Sphere = function(id) {
+	this.id = id;
+
 	this.solid = {
 		curves: [],
 		points: [],
@@ -37,6 +39,7 @@ var Sphere = function() {
 		scale: vec3(1.0, 1.0, 1.0)
 	}
 
+	this.setupData();
 	this.createPoints(); 
 }
 
@@ -171,7 +174,11 @@ Sphere.prototype.render = function() {
 	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length+this.wire.botPoints.length, this.wire.topPoints.length);
 }
 
-// --- Sphere Class --- //
+Sphere.prototype.toString = function() {
+	return this.id;
+}
+
+// --- End: Sphere Class --- //
 
 var gl;
 var spheres = [];
@@ -187,9 +194,6 @@ window.onload = function init() {
 	gl.program2 = initShadersFromSource(gl, VSHADER_SOURCE2, FSHADER_SOURCE2);
 	gl.useProgram(gl.program);
 
-	spheres.push( new Sphere() );
-	spheres.push( new Sphere() );
-
 	setupGUI();
 	setupData();
 	requestAnimFrame(updateAndRender);
@@ -197,6 +201,7 @@ window.onload = function init() {
 
 function setupGUI() {
 	var effectController = {
+		newAddSphere: addSphere,
 		newActiveIndex: activeIndex,
 		newTranslateX: 0.0,
 		newTranslateY: 0.0,
@@ -210,7 +215,16 @@ function setupGUI() {
 	};
 
 	var gui = new dat.GUI();
-	gui.add(effectController, 'newActiveIndex', {First:0, Second:1}).name("Active Element").onChange(function(value) {
+	var f0 = gui.addFolder('Add');
+	function addSphere() {
+		spheres.push( new Sphere(spheres.length) );
+		f1.remove(activeIndexControl);
+		activeIndexControl = f1.add(effectController, 'newActiveIndex', spheres).name("Active Element").onChange(activeElementOnChange);
+		bUpdate = true;
+	}
+	f0.add(effectController, "newAddSphere").name("Add Sphere");
+	var f1 = gui.addFolder('Current');
+	function activeElementOnChange(value) {
 		if (effectController.newActiveIndex !== activeIndex) {
 			activeIndex = effectController.newActiveIndex;
 
@@ -224,71 +238,72 @@ function setupGUI() {
 			effectController.newScaleY = spheres[activeIndex].ui.scale[1];
 			effectController.newScaleZ = spheres[activeIndex].ui.scale[2];
 		}
-	});
-
-	gui.add( effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').listen().onChange(function(value) {
+	}
+	var activeIndexControl = f1.add(effectController, 'newActiveIndex', spheres).name("Active Element").onChange(activeElementOnChange);
+	var f2 = gui.addFolder('Edit');
+	f2.add( effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').listen().onChange(function(value) {
 		if (effectController.newTranslateX !== spheres[activeIndex].ui.translate[0]) {
 			spheres[activeIndex].translate(0, effectController.newTranslateX);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').listen().onChange(function(value) {
+	f2.add( effectController, 'newTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').listen().onChange(function(value) {
 		if (effectController.newTranslateY !== spheres[activeIndex].ui.translate[1]) {
 			spheres[activeIndex].translate(1, effectController.newTranslateY);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').listen().onChange(function(value) {
+	f2.add( effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').listen().onChange(function(value) {
 		if (effectController.newTranslateZ !== spheres[activeIndex].ui.translate[2]) {
 			spheres[activeIndex].translate(2, effectController.newTranslateZ);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newRotateX', -180.0, 180.0).step(1.0).name('RotateX').listen().onChange(function(value) {
+	f2.add( effectController, 'newRotateX', -180.0, 180.0).step(1.0).name('RotateX').listen().onChange(function(value) {
 		if (effectController.newRotateX !== spheres[activeIndex].ui.rotate[0]) {
 			spheres[activeIndex].rotate(0, effectController.newRotateX);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newRotateY', -180.0, 180.0).step(1.0).name('RotateY').listen().onChange(function(value) {
+	f2.add( effectController, 'newRotateY', -180.0, 180.0).step(1.0).name('RotateY').listen().onChange(function(value) {
 		if (effectController.newRotateY !== spheres[activeIndex].ui.rotate[1]) {
 			spheres[activeIndex].rotate(1, effectController.newRotateY);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').listen().onChange(function(value) {
+	f2.add( effectController, 'newRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').listen().onChange(function(value) {
 		if (effectController.newRotateZ !== spheres[activeIndex].ui.rotate[2]) {
 			spheres[activeIndex].rotate(2, effectController.newRotateZ);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newScaleX', 0.0, 2.0).step(0.1).name('ScaleX').listen().onChange(function(value) {
+	f2.add( effectController, 'newScaleX', 0.0, 2.0).step(0.1).name('ScaleX').listen().onChange(function(value) {
 		if (effectController.newScaleX !== spheres[activeIndex].ui.scale[0]) {
 			spheres[activeIndex].scale(0, effectController.newScaleX);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newScaleY', 0.0, 2.0).step(0.1).name('ScaleY').listen().onChange(function(value) {
+	f2.add( effectController, 'newScaleY', 0.0, 2.0).step(0.1).name('ScaleY').listen().onChange(function(value) {
 		if (effectController.newScaleY !== spheres[activeIndex].ui.scale[1]) {
 			spheres[activeIndex].scale(1, effectController.newScaleY);
 			bUpdate = true;
 		}
 	});
-	gui.add( effectController, 'newScaleZ', 0.0, 2.0).step(0.1).name('ScaleZ').listen().onChange(function(value) {
+	f2.add( effectController, 'newScaleZ', 0.0, 2.0).step(0.1).name('ScaleZ').listen().onChange(function(value) {
 		if (effectController.newScaleZ !== spheres[activeIndex].ui.scale[2]) {
 			spheres[activeIndex].scale(2, effectController.newScaleZ);
 			bUpdate = true;
 		}
 	});
+
+	f0.open();
+	f1.open();
+	f2.open();
 }
 
 function setupData() {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);
-
-	for (var i = 0; i < spheres.length; i++) {
-		spheres[i].setupData();
-	}
 }
 
 function updateAndRender() {
