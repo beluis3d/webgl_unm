@@ -290,8 +290,6 @@ function setupGUI() {
 var gl;
 var spheres = [];
 var bUpdate = true;
-
-var effectController;
 var activeIndex = 0;
 
 window.onload = function init() {
