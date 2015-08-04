@@ -1,8 +1,9 @@
 // script.js
 
-// --- Begin: Sphere Class --- //
 
-var Sphere = function(id) {
+// --- Begin: Object3D Class --- //
+
+var Object3D = function(id) {
 	this.id = id;
 
 	this.solid = {
@@ -42,6 +43,91 @@ var Sphere = function(id) {
 	this.setupData();
 	this.createPoints(); 
 }
+
+Object3D.prototype.setupData = function() {
+	this.si.vBufferId = gl.createBuffer();
+	this.si.wBufferId = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);	
+	this.si.a_Location = gl.getAttribLocation(gl.program, "a_Location");
+	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(this.si.a_Location);
+
+	this.si.a_Affine = gl.getAttribLocation(gl.program, "a_Affine");
+}
+
+Object3D.prototype.translate = function(axis, value) { 
+	this.ui.translate[axis] = value;
+	this.ap.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
+}
+
+Object3D.prototype.rotate = function(axis, value) {
+	this.ui.rotate[axis] = value;
+	var _x = rotate(this.ui.rotate[0], 1.0, 0.0, 0.0);
+	var _y = rotate(this.ui.rotate[1], 0.0, 1.0, 0.0);
+	var _z = rotate(this.ui.rotate[2], 0.0, 0.0, 1.0); 
+	this.ap.rotate = mult(_z, mult(_y, _x));
+}
+
+Object3D.prototype.scale = function(axis, value) {
+	this.ui.scale[axis] = value; 
+	this.ap.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
+}
+
+Object3D.prototype.updateAffineMatrix = function() {
+	this.ap.affine = mult(this.ap.translate, mult(this.ap.rotate, this.ap.scale));
+}
+
+Object3D.prototype.update = function() {
+	this.updateAffineMatrix();
+	
+	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
+	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(allSolidPoints), gl.STATIC_DRAW);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(allWirePoints), gl.STATIC_DRAW);
+	
+	var a_Affine = this.si.a_Affine;
+	var affine = this.ap.affine;
+	gl.vertexAttrib4f( a_Affine+0, affine[0][0], affine[1][0], affine[2][0], affine[3][0] );
+	gl.vertexAttrib4f( a_Affine+1, affine[0][1], affine[1][1], affine[2][1], affine[3][1] );
+	gl.vertexAttrib4f( a_Affine+2, affine[0][2], affine[1][2], affine[2][2], affine[3][2] );
+	gl.vertexAttrib4f( a_Affine+3, affine[0][3], affine[1][3], affine[2][3], affine[3][3] );
+}
+
+Object3D.prototype.render = function() {
+	gl.useProgram(gl.program);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);
+	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
+	for (var i = 0; i < this.solid.curves.length; i++) {
+		gl.drawArrays(gl.TRIANGLE_STRIP, this.solid.curves[i].start, this.solid.curves[i].size);	
+	}
+	gl.drawArrays(gl.TRIANGLE_FAN, this.solid.points.length, this.solid.botPoints.length);
+	gl.drawArrays(gl.TRIANGLE_FAN, this.solid.points.length+this.solid.botPoints.length, this.solid.topPoints.length);
+
+
+	gl.useProgram(gl.program2);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
+	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
+	for (var i = 0; i < this.wire.curves.length; i++) {
+		gl.drawArrays(gl.LINE_STRIP, this.wire.curves[i].start, this.wire.curves[i].size);	
+	}
+	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length, this.wire.botPoints.length);
+	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length+this.wire.botPoints.length, this.wire.topPoints.length);
+}
+
+Object3D.prototype.toString = function() {
+	return this.id;
+}
+
+// --- End: Object3D Class --- //
+
+
+// --- Begin: Sphere Class --- //
+
+var Sphere = function(id) { Object3D.call(this, id); }
+Sphere.prototype = Object.create(Object3D.prototype);
+Sphere.prototype.constructor = Sphere;
 
 Sphere.prototype.createPoints = function() {
 	var steps = 12.0;
@@ -102,127 +188,14 @@ Sphere.prototype.createPoints = function() {
 	}
 }
 
-Sphere.prototype.setupData = function() {
-	this.si.vBufferId = gl.createBuffer();
-	this.si.wBufferId = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);	
-	this.si.a_Location = gl.getAttribLocation(gl.program, "a_Location");
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
-	gl.enableVertexAttribArray(this.si.a_Location);
-
-	this.si.a_Affine = gl.getAttribLocation(gl.program, "a_Affine");
-}
-
-Sphere.prototype.translate = function(axis, value) { 
-	this.ui.translate[axis] = value;
-	this.ap.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
-}
-
-Sphere.prototype.rotate = function(axis, value) {
-	this.ui.rotate[axis] = value;
-	var _x = rotate(this.ui.rotate[0], 1.0, 0.0, 0.0);
-	var _y = rotate(this.ui.rotate[1], 0.0, 1.0, 0.0);
-	var _z = rotate(this.ui.rotate[2], 0.0, 0.0, 1.0); 
-	this.ap.rotate = mult(_z, mult(_y, _x));
-}
-
-Sphere.prototype.scale = function(axis, value) {
-	this.ui.scale[axis] = value; 
-	this.ap.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
-}
-
-Sphere.prototype.updateAffineMatrix = function() {
-	this.ap.affine = mult(this.ap.translate, mult(this.ap.rotate, this.ap.scale));
-}
-
-Sphere.prototype.update = function() {
-	this.updateAffineMatrix();
-	
-	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
-	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);
-	gl.bufferData(gl.ARRAY_BUFFER, flatten(allSolidPoints), gl.STATIC_DRAW);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
-	gl.bufferData(gl.ARRAY_BUFFER, flatten(allWirePoints), gl.STATIC_DRAW);
-	
-	var a_Affine = this.si.a_Affine;
-	var affine = this.ap.affine;
-	gl.vertexAttrib4f( a_Affine+0, affine[0][0], affine[1][0], affine[2][0], affine[3][0] );
-	gl.vertexAttrib4f( a_Affine+1, affine[0][1], affine[1][1], affine[2][1], affine[3][1] );
-	gl.vertexAttrib4f( a_Affine+2, affine[0][2], affine[1][2], affine[2][2], affine[3][2] );
-	gl.vertexAttrib4f( a_Affine+3, affine[0][3], affine[1][3], affine[2][3], affine[3][3] );
-}
-
-Sphere.prototype.render = function() {
-	gl.useProgram(gl.program);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
-	for (var i = 0; i < this.solid.curves.length; i++) {
-		gl.drawArrays(gl.TRIANGLE_STRIP, this.solid.curves[i].start, this.solid.curves[i].size);	
-	}
-	gl.drawArrays(gl.TRIANGLE_FAN, this.solid.points.length, this.solid.botPoints.length);
-	gl.drawArrays(gl.TRIANGLE_FAN, this.solid.points.length+this.solid.botPoints.length, this.solid.topPoints.length);
-
-
-	gl.useProgram(gl.program2);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
-	for (var i = 0; i < this.wire.curves.length; i++) {
-		gl.drawArrays(gl.LINE_STRIP, this.wire.curves[i].start, this.wire.curves[i].size);	
-	}
-	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length, this.wire.botPoints.length);
-	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length+this.wire.botPoints.length, this.wire.topPoints.length);
-}
-
-Sphere.prototype.toString = function() {
-	return this.id;
-}
-
 // --- End: Sphere Class --- //
 
 
 // --- Begin: Cylinder Class --- //
 
-var Cylinder = function(id) {
-	this.id = id;
-
-	this.solid = {
-		curves: [],
-		points: [],
-		botPoints: [],
-		topPoints: []
-	};
-
-	this.wire = {
-		curves: [],
-		points: [],
-		botPoints: [],
-		topPoints: []	
-	};
-
-	this.si = { // shader inputs
-		vBufferId: undefined,  // shader buffer for the points
-		wBufferId: undefined,  // shader buffer for the wireframes
-		a_Location: undefined, // shader field for location of vertex
-		a_Affine: mat4()       // shader field for affine transformation
-	};
-
-	this.ap = { // affineProperties
-		affine: mat4(), 		// the collection of affine transformations (translate, rotate, & scale)
-		translate: mat4(),
-		rotate: mat4(),
-		scale: mat4()
-	};
-
-	this.ui = {
-		translate: vec3(0.0, 0.0, 0.0),
-		rotate: vec3(0.0, 0.0, 0.0),
-		scale: vec3(1.0, 1.0, 1.0)
-	}
-
-	this.setupData();
-	this.createPoints(); 
-}
+var Cylinder = function(id) { Object3D.call(this, id); }
+Cylinder.prototype = Object.create(Object3D.prototype);
+Cylinder.prototype.constructor = Cylinder;
 
 Cylinder.prototype.createPoints = function() {
 	var steps = 12.0;
@@ -285,82 +258,8 @@ Cylinder.prototype.createPoints = function() {
 	}
 }
 
-Cylinder.prototype.setupData = function() {
-	this.si.vBufferId = gl.createBuffer();
-	this.si.wBufferId = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);	
-	this.si.a_Location = gl.getAttribLocation(gl.program, "a_Location");
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
-	gl.enableVertexAttribArray(this.si.a_Location);
-
-	this.si.a_Affine = gl.getAttribLocation(gl.program, "a_Affine");
-}
-
-Cylinder.prototype.translate = function(axis, value) { 
-	this.ui.translate[axis] = value;
-	this.ap.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
-}
-
-Cylinder.prototype.rotate = function(axis, value) {
-	this.ui.rotate[axis] = value;
-	var _x = rotate(this.ui.rotate[0], 1.0, 0.0, 0.0);
-	var _y = rotate(this.ui.rotate[1], 0.0, 1.0, 0.0);
-	var _z = rotate(this.ui.rotate[2], 0.0, 0.0, 1.0); 
-	this.ap.rotate = mult(_z, mult(_y, _x));
-}
-
-Cylinder.prototype.scale = function(axis, value) {
-	this.ui.scale[axis] = value; 
-	this.ap.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
-}
-
-Cylinder.prototype.updateAffineMatrix = function() {
-	this.ap.affine = mult(this.ap.translate, mult(this.ap.rotate, this.ap.scale));
-}
-
-Cylinder.prototype.update = function() {
-	this.updateAffineMatrix();
-	
-	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
-	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);
-	gl.bufferData(gl.ARRAY_BUFFER, flatten(allSolidPoints), gl.STATIC_DRAW);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
-	gl.bufferData(gl.ARRAY_BUFFER, flatten(allWirePoints), gl.STATIC_DRAW);
-	
-	var a_Affine = this.si.a_Affine;
-	var affine = this.ap.affine;
-	gl.vertexAttrib4f( a_Affine+0, affine[0][0], affine[1][0], affine[2][0], affine[3][0] );
-	gl.vertexAttrib4f( a_Affine+1, affine[0][1], affine[1][1], affine[2][1], affine[3][1] );
-	gl.vertexAttrib4f( a_Affine+2, affine[0][2], affine[1][2], affine[2][2], affine[3][2] );
-	gl.vertexAttrib4f( a_Affine+3, affine[0][3], affine[1][3], affine[2][3], affine[3][3] );
-}
-
-Cylinder.prototype.render = function() {
-	gl.useProgram(gl.program);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
-	for (var i = 0; i < this.solid.curves.length; i++) {
-		gl.drawArrays(gl.TRIANGLE_STRIP, this.solid.curves[i].start, this.solid.curves[i].size);	
-	}
-	gl.drawArrays(gl.TRIANGLE_FAN, this.solid.points.length, this.solid.botPoints.length);
-	gl.drawArrays(gl.TRIANGLE_FAN, this.solid.points.length+this.solid.botPoints.length, this.solid.topPoints.length);
-
-	gl.useProgram(gl.program2);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
-	for (var i = 0; i < this.wire.curves.length; i++) {
-		gl.drawArrays(gl.LINE_STRIP, this.wire.curves[i].start, this.wire.curves[i].size);	
-	}
-	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length, this.wire.botPoints.length);
-	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length+this.wire.botPoints.length, this.wire.topPoints.length);
-}
-
-Cylinder.prototype.toString = function() {
-	return this.id;
-}
-
 // --- End: Cylinder Class --- //
+
 
 // -- Begin: GUI -- //
 
