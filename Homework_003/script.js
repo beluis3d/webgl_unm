@@ -367,6 +367,7 @@ Cylinder.prototype.toString = function() {
 function setupGUI() {
 	var effectController = {
 		newAddSphere: addSphere,
+		newAddCylinder: addCylinder,
 		newActiveIndex: activeIndex,
 		newTranslateX: 0.0,
 		newTranslateY: 0.0,
@@ -387,7 +388,14 @@ function setupGUI() {
 		activeIndexControl = f1.add(effectController, 'newActiveIndex', spheres).name("Active Element").onChange(activeElementOnChange);
 		bUpdate = true;
 	}
+	function addCylinder() {
+		spheres.push( new Cylinder(spheres.length) );
+		f1.remove(activeIndexControl);
+		activeIndexControl = f1.add(effectController, 'newActiveIndex', spheres).name("Active Element").onChange(activeElementOnChange);
+		bUpdate = true;
+	}
 	f0.add(effectController, "newAddSphere").name("Add Sphere");
+	f0.add(effectController, "newAddCylinder").name("Add Cylinder");
 	var f1 = gui.addFolder('Current');
 	function activeElementOnChange(value) {
 		if (effectController.newActiveIndex !== activeIndex) {
