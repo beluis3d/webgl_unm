@@ -282,15 +282,15 @@ function setupGUI() {
 	var gui = new dat.GUI();
 	var f0 = gui.addFolder('Add');
 	function addSphere() {
-		spheres.push( new Sphere(spheres.length) );
+		geomObjects.push( new Sphere(geomObjects.length) );
 		f1.remove(activeIndexControl);
-		activeIndexControl = f1.add(effectController, 'newActiveIndex', spheres).name("Active Element").onChange(activeElementOnChange);
+		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
 		bUpdate = true;
 	}
 	function addCylinder() {
-		spheres.push( new Cylinder(spheres.length) );
+		geomObjects.push( new Cylinder(geomObjects.length) );
 		f1.remove(activeIndexControl);
-		activeIndexControl = f1.add(effectController, 'newActiveIndex', spheres).name("Active Element").onChange(activeElementOnChange);
+		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
 		bUpdate = true;
 	}
 	f0.add(effectController, "newAddSphere").name("Add Sphere");
@@ -300,70 +300,70 @@ function setupGUI() {
 		if (effectController.newActiveIndex !== activeIndex) {
 			activeIndex = effectController.newActiveIndex;
 
-			effectController.newTranslateX = spheres[activeIndex].ui.translate[0];
-			effectController.newTranslateY = spheres[activeIndex].ui.translate[1];
-			effectController.newTranslateZ = spheres[activeIndex].ui.translate[2];
-			effectController.newRotateX = spheres[activeIndex].ui.rotate[0];
-			effectController.newRotateY = spheres[activeIndex].ui.rotate[1];
-			effectController.newRotateZ = spheres[activeIndex].ui.rotate[2];
-			effectController.newScaleX = spheres[activeIndex].ui.scale[0];
-			effectController.newScaleY = spheres[activeIndex].ui.scale[1];
-			effectController.newScaleZ = spheres[activeIndex].ui.scale[2];
+			effectController.newTranslateX = geomObjects[activeIndex].ui.translate[0];
+			effectController.newTranslateY = geomObjects[activeIndex].ui.translate[1];
+			effectController.newTranslateZ = geomObjects[activeIndex].ui.translate[2];
+			effectController.newRotateX = geomObjects[activeIndex].ui.rotate[0];
+			effectController.newRotateY = geomObjects[activeIndex].ui.rotate[1];
+			effectController.newRotateZ = geomObjects[activeIndex].ui.rotate[2];
+			effectController.newScaleX = geomObjects[activeIndex].ui.scale[0];
+			effectController.newScaleY = geomObjects[activeIndex].ui.scale[1];
+			effectController.newScaleZ = geomObjects[activeIndex].ui.scale[2];
 		}
 	}
-	var activeIndexControl = f1.add(effectController, 'newActiveIndex', spheres).name("Active Element").onChange(activeElementOnChange);
+	var activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
 	var f2 = gui.addFolder('Edit');
 	f2.add( effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').listen().onChange(function(value) {
-		if (effectController.newTranslateX !== spheres[activeIndex].ui.translate[0]) {
-			spheres[activeIndex].translate(0, effectController.newTranslateX);
+		if (effectController.newTranslateX !== geomObjects[activeIndex].ui.translate[0]) {
+			geomObjects[activeIndex].translate(0, effectController.newTranslateX);
 			bUpdate = true;
 		}
 	});
 	f2.add( effectController, 'newTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').listen().onChange(function(value) {
-		if (effectController.newTranslateY !== spheres[activeIndex].ui.translate[1]) {
-			spheres[activeIndex].translate(1, effectController.newTranslateY);
+		if (effectController.newTranslateY !== geomObjects[activeIndex].ui.translate[1]) {
+			geomObjects[activeIndex].translate(1, effectController.newTranslateY);
 			bUpdate = true;
 		}
 	});
 	f2.add( effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').listen().onChange(function(value) {
-		if (effectController.newTranslateZ !== spheres[activeIndex].ui.translate[2]) {
-			spheres[activeIndex].translate(2, effectController.newTranslateZ);
+		if (effectController.newTranslateZ !== geomObjects[activeIndex].ui.translate[2]) {
+			geomObjects[activeIndex].translate(2, effectController.newTranslateZ);
 			bUpdate = true;
 		}
 	});
 	f2.add( effectController, 'newRotateX', -180.0, 180.0).step(1.0).name('RotateX').listen().onChange(function(value) {
-		if (effectController.newRotateX !== spheres[activeIndex].ui.rotate[0]) {
-			spheres[activeIndex].rotate(0, effectController.newRotateX);
+		if (effectController.newRotateX !== geomObjects[activeIndex].ui.rotate[0]) {
+			geomObjects[activeIndex].rotate(0, effectController.newRotateX);
 			bUpdate = true;
 		}
 	});
 	f2.add( effectController, 'newRotateY', -180.0, 180.0).step(1.0).name('RotateY').listen().onChange(function(value) {
-		if (effectController.newRotateY !== spheres[activeIndex].ui.rotate[1]) {
-			spheres[activeIndex].rotate(1, effectController.newRotateY);
+		if (effectController.newRotateY !== geomObjects[activeIndex].ui.rotate[1]) {
+			geomObjects[activeIndex].rotate(1, effectController.newRotateY);
 			bUpdate = true;
 		}
 	});
 	f2.add( effectController, 'newRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').listen().onChange(function(value) {
-		if (effectController.newRotateZ !== spheres[activeIndex].ui.rotate[2]) {
-			spheres[activeIndex].rotate(2, effectController.newRotateZ);
+		if (effectController.newRotateZ !== geomObjects[activeIndex].ui.rotate[2]) {
+			geomObjects[activeIndex].rotate(2, effectController.newRotateZ);
 			bUpdate = true;
 		}
 	});
 	f2.add( effectController, 'newScaleX', 0.0, 2.0).step(0.1).name('ScaleX').listen().onChange(function(value) {
-		if (effectController.newScaleX !== spheres[activeIndex].ui.scale[0]) {
-			spheres[activeIndex].scale(0, effectController.newScaleX);
+		if (effectController.newScaleX !== geomObjects[activeIndex].ui.scale[0]) {
+			geomObjects[activeIndex].scale(0, effectController.newScaleX);
 			bUpdate = true;
 		}
 	});
 	f2.add( effectController, 'newScaleY', 0.0, 2.0).step(0.1).name('ScaleY').listen().onChange(function(value) {
-		if (effectController.newScaleY !== spheres[activeIndex].ui.scale[1]) {
-			spheres[activeIndex].scale(1, effectController.newScaleY);
+		if (effectController.newScaleY !== geomObjects[activeIndex].ui.scale[1]) {
+			geomObjects[activeIndex].scale(1, effectController.newScaleY);
 			bUpdate = true;
 		}
 	});
 	f2.add( effectController, 'newScaleZ', 0.0, 2.0).step(0.1).name('ScaleZ').listen().onChange(function(value) {
-		if (effectController.newScaleZ !== spheres[activeIndex].ui.scale[2]) {
-			spheres[activeIndex].scale(2, effectController.newScaleZ);
+		if (effectController.newScaleZ !== geomObjects[activeIndex].ui.scale[2]) {
+			geomObjects[activeIndex].scale(2, effectController.newScaleZ);
 			bUpdate = true;
 		}
 	});
@@ -376,7 +376,7 @@ function setupGUI() {
 // -- End: GUI -- //
 
 var gl;
-var spheres = [];
+var geomObjects = [];
 var bUpdate = true;
 var activeIndex = 0;
 
@@ -405,9 +405,9 @@ function updateAndRender() {
 
 	bUpdate = false;
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	for (var i = 0; i < spheres.length; i++) {
-		spheres[i].update();
-		spheres[i].render();
+	for (var i = 0; i < geomObjects.length; i++) {
+		geomObjects[i].update();
+		geomObjects[i].render();
 	}
 	requestAnimFrame(updateAndRender);
 }
