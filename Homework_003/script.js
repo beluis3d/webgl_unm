@@ -180,24 +180,8 @@ Sphere.prototype.toString = function() {
 
 // --- End: Sphere Class --- //
 
-var gl;
-var spheres = [];
-var bUpdate = true;
 
-var effectController;
-var activeIndex = 0;
-
-window.onload = function init() {
-	var canvas = document.getElementById("gl-canvas");
-	gl = WebGLUtils.setupWebGL(canvas);
-	gl.program = initShadersFromSource(gl, VSHADER_SOURCE, FSHADER_SOURCE);
-	gl.program2 = initShadersFromSource(gl, VSHADER_SOURCE2, FSHADER_SOURCE2);
-	gl.useProgram(gl.program);
-
-	setupGUI();
-	setupData();
-	requestAnimFrame(updateAndRender);
-}
+// -- Begin: GUI -- //
 
 function setupGUI() {
 	var effectController = {
@@ -301,6 +285,27 @@ function setupGUI() {
 	f2.open();
 }
 
+// -- End: GUI -- //
+
+var gl;
+var spheres = [];
+var bUpdate = true;
+
+var effectController;
+var activeIndex = 0;
+
+window.onload = function init() {
+	var canvas = document.getElementById("gl-canvas");
+	gl = WebGLUtils.setupWebGL(canvas);
+	gl.program = initShadersFromSource(gl, VSHADER_SOURCE, FSHADER_SOURCE);
+	gl.program2 = initShadersFromSource(gl, VSHADER_SOURCE2, FSHADER_SOURCE2);
+	gl.useProgram(gl.program);
+
+	setupGUI();
+	setupData();
+	requestAnimFrame(updateAndRender);
+}
+
 function setupData() {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);
@@ -327,3 +332,4 @@ function polarToCartesian(radius, theta, phi) {
 	var z = radius*Math.cos(radians(phi));
 	return vec3(x,y,z);
 }
+
