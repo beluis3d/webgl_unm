@@ -337,6 +337,7 @@ function setupGUI() {
 	var effectController = {
 		newAddSphere: addSphere,
 		newAddCylinder: addCylinder,
+		newAddCone: addCone,
 		newActiveIndex: activeIndex,
 		newTranslateX: 0.0,
 		newTranslateY: 0.0,
@@ -363,8 +364,15 @@ function setupGUI() {
 		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
 		bUpdate = true;
 	}
+	function addCone() {
+		geomObjects.push( new Cone(geomObjects.length) );
+		f1.remove(activeIndexControl);
+		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
+		bUpdate = true;
+	}
 	f0.add(effectController, "newAddSphere").name("Add Sphere");
 	f0.add(effectController, "newAddCylinder").name("Add Cylinder");
+	f0.add(effectController, "newAddCone").name("Add Cone");
 	var f1 = gui.addFolder('Current');
 	function activeElementOnChange(value) {
 		if (effectController.newActiveIndex !== activeIndex) {
