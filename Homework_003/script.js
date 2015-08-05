@@ -261,6 +261,76 @@ Cylinder.prototype.createPoints = function() {
 // --- End: Cylinder Class --- //
 
 
+// --- Begin: Cone Class --- //
+
+var Cone = function(id) { Object3D.call(this, id); }
+Cone.prototype = Object.create(Object3D.prototype);
+Cone.prototype.constructor = Cone;
+
+Cone.prototype.createPoints = function() {
+	var steps = 12.0;
+	var height = 2.0;
+	var di = 360.0/steps;
+	var dk = height/steps;
+	var radius = 1.0;
+	var EPSILON = 0.5*dk;
+
+	// Triangle Points
+	for (var k = -0.5*height+dk; k < 0.5*height-EPSILON; k+=dk) {
+		var kCurve = { start: this.solid.points.length, size: 0 };
+		for (var i = 0.0; i <= 360.0; i+=di) {
+			var p1 = polarToCartesianCone(radius,i,k, height);
+			var p2 = polarToCartesianCone(radius,i,k+dk, height);
+			
+			kCurve.size+=2;
+			this.solid.points.push( p1, p2 );
+		}
+		this.solid.curves.push( kCurve );
+	}
+	var botPoint = vec3(0.0,0.0,-0.5*height);
+	this.solid.botPoints = [botPoint];
+	for(var i = 0; i <= 360.0; i+=di) {
+		var p1 = polarToCartesianCone(radius,i,-0.5*height+dk, height);
+		this.solid.botPoints.push(p1);
+	}
+	var topPoint = vec3(0.0,0.0,0.5*height);
+	this.solid.topPoints = [topPoint];
+	for(var i = 0; i <= 360.0; i+=di) {
+		var p1 = polarToCartesianCone(radius,i,0.5*height, height);
+		this.solid.topPoints.push(p1);
+	}
+
+	//Wire Points
+	for (var k = -0.5*height+dk; k < 0.5*height-EPSILON; k+=dk) {
+		var kWireCurve = { start: this.wire.points.length, size: 0 };
+		for (var i = 0.0; i <= 360.0; i+=2*di) {
+			var p1 = polarToCartesianCone(radius,i,k, height);
+			var p2 = polarToCartesianCone(radius,i,k+dk, height);
+			var p3 = polarToCartesianCone(radius,i+di,k+dk, height);
+			var p4 = polarToCartesianCone(radius,i+di,k, height);
+			
+			kWireCurve.size+=4;
+			this.wire.points.push( p1, p2, p3, p4 );
+		}
+		this.wire.curves.push( kWireCurve );
+	}
+	var botWirePoint = vec3(0.0,0.0,-0.5*height);
+	for(var i = 0; i <= 360.0; i+=2*di) {
+		var p1 = polarToCartesianCone(radius,i,-0.5*height+dk, height);
+		var p2 = polarToCartesianCone(radius,i+di,-0.5*height+dk, height);
+		this.wire.botPoints.push( botWirePoint, p1, p2 );
+	}
+	var topWirePoint = vec3(0.0,0.0,0.5*height);
+	for(var i = 0; i <= 360.0; i+=2*di) {
+		var p1 = polarToCartesianCone(radius,i-di,0.5*height, height); // this is the opposite of bottom (i-di)
+		var p2 = polarToCartesianCone(radius,i,0.5*height, height);
+		this.wire.topPoints.push( topWirePoint, p1, p2 );
+	}
+}
+
+// --- End: Cone Class --- //
+
+
 // -- Begin: GUI -- //
 
 function setupGUI() {
@@ -423,6 +493,14 @@ function polarToCartesian2D(radius, theta, height) {
 	var x = radius*Math.cos(radians(theta));
 	var y = radius*Math.sin(radians(theta));
 	var z = height;
+	return vec3(x,y,z);
+}
+
+function polarToCartesianCone(radius, theta, currentHeight, totalHeight) {
+	var heightRatio = (currentHeight+0.5*totalHeight)/totalHeight;
+	var x = heightRatio*radius*Math.cos(radians(theta));
+	var y = heightRatio*radius*Math.sin(radians(theta));
+	var z = currentHeight;
 	return vec3(x,y,z);
 }
 
