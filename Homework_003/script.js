@@ -338,6 +338,7 @@ function setupGUI() {
 		newAddSphere: addSphere,
 		newAddCylinder: addCylinder,
 		newAddCone: addCone,
+		newUndo: undoAdd,
 		newActiveIndex: activeIndex,
 		newTranslateX: 0.0,
 		newTranslateY: 0.0,
@@ -354,42 +355,52 @@ function setupGUI() {
 	var f0 = gui.addFolder('Add');
 	function addSphere() {
 		geomObjects.push( new Sphere(geomObjects.length) );
-		f1.remove(activeIndexControl);
-		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
+		updateActiveIndexControl();
 		bUpdate = true;
 	}
 	function addCylinder() {
 		geomObjects.push( new Cylinder(geomObjects.length) );
-		f1.remove(activeIndexControl);
-		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
+		updateActiveIndexControl();
 		bUpdate = true;
 	}
 	function addCone() {
 		geomObjects.push( new Cone(geomObjects.length) );
-		f1.remove(activeIndexControl);
-		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
+		updateActiveIndexControl();
+		bUpdate = true;
+	}
+	function undoAdd() {
+		geomObjects.pop();
+		updateActiveIndexControl();
 		bUpdate = true;
 	}
 	f0.add(effectController, "newAddSphere").name("Add Sphere");
 	f0.add(effectController, "newAddCylinder").name("Add Cylinder");
 	f0.add(effectController, "newAddCone").name("Add Cone");
+	f0.add(effectController, "newUndo").name("Undo Add");
 	var f1 = gui.addFolder('Current');
+	function updateActiveIndexControl() {
+		f1.remove(activeIndexControl);
+		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
+		
+		effectController.newActiveIndex = geomObjects.length-1;
+		activeElementOnChange(null);
+	}
 	function activeElementOnChange(value) {
 		if (effectController.newActiveIndex !== activeIndex) {
 			activeIndex = effectController.newActiveIndex;
 
-			effectController.newTranslateX = geomObjects[activeIndex].ui.translate[0];
-			effectController.newTranslateY = geomObjects[activeIndex].ui.translate[1];
-			effectController.newTranslateZ = geomObjects[activeIndex].ui.translate[2];
-			effectController.newRotateX = geomObjects[activeIndex].ui.rotate[0];
-			effectController.newRotateY = geomObjects[activeIndex].ui.rotate[1];
-			effectController.newRotateZ = geomObjects[activeIndex].ui.rotate[2];
-			effectController.newScaleX = geomObjects[activeIndex].ui.scale[0];
-			effectController.newScaleY = geomObjects[activeIndex].ui.scale[1];
-			effectController.newScaleZ = geomObjects[activeIndex].ui.scale[2];
+			effectController.newTranslateX = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[0];
+			effectController.newTranslateY = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[1];
+			effectController.newTranslateZ = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[2];
+			effectController.newRotateX = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[0];
+			effectController.newRotateY = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[1];
+			effectController.newRotateZ = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[2];
+			effectController.newScaleX = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[0];
+			effectController.newScaleY = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[1];
+			effectController.newScaleZ = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[2];
 		}
 	}
-	var activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").onChange(activeElementOnChange);
+	var activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
 	var f2 = gui.addFolder('Edit');
 	f2.add( effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').listen().onChange(function(value) {
 		if (effectController.newTranslateX !== geomObjects[activeIndex].ui.translate[0]) {
@@ -456,7 +467,7 @@ function setupGUI() {
 var gl;
 var geomObjects = [];
 var bUpdate = true;
-var activeIndex = 0;
+var activeIndex = -1;
 
 window.onload = function init() {
 	var canvas = document.getElementById("gl-canvas");
