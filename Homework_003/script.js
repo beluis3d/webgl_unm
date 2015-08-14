@@ -3,8 +3,9 @@
 
 // --- Begin: Object3D Class --- //
 
-var Object3D = function(id) {
+var Object3D = function(id, className) {
 	this.id = id;
+	this.className = (!!className) ? className : "Object3D";
 
 	this.solid = {
 		curves: [],
@@ -120,12 +121,37 @@ Object3D.prototype.toString = function() {
 	return this.id;
 }
 
+Object3D.prototype.debugString = function() {
+	return this._debugString(this, "");
+}
+
+Object3D.prototype._debugString = function(obj, indent) {
+	if (!obj) return "undefined";
+
+	var retStr = "";
+	for (var key in obj) {
+  		if (obj.hasOwnProperty(key)) {
+  			var value = obj[key];
+  			
+  			if (!(value instanceof Object)) {
+    			retStr += indent + (key + " -> " + value) + "\n";
+    		} else {
+    			retStr += indent + (key + " -> ") + "\n"
+    			retStr += this._debugString(value, indent+"\t");
+    		}
+
+  		}
+	}
+
+	return retStr;
+}
+
 // --- End: Object3D Class --- //
 
 
 // --- Begin: Sphere Class --- //
 
-var Sphere = function(id) { Object3D.call(this, id); }
+var Sphere = function(id) { Object3D.call(this, id, "Sphere"); }
 Sphere.prototype = Object.create(Object3D.prototype);
 Sphere.prototype.constructor = Sphere;
 
@@ -193,7 +219,7 @@ Sphere.prototype.createPoints = function() {
 
 // --- Begin: Cylinder Class --- //
 
-var Cylinder = function(id) { Object3D.call(this, id); }
+var Cylinder = function(id) { Object3D.call(this, id, "Cylinder"); }
 Cylinder.prototype = Object.create(Object3D.prototype);
 Cylinder.prototype.constructor = Cylinder;
 
@@ -263,7 +289,7 @@ Cylinder.prototype.createPoints = function() {
 
 // --- Begin: Cone Class --- //
 
-var Cone = function(id) { Object3D.call(this, id); }
+var Cone = function(id) { Object3D.call(this, id, "Cone"); }
 Cone.prototype = Object.create(Object3D.prototype);
 Cone.prototype.constructor = Cone;
 
@@ -338,7 +364,6 @@ function setupGUI() {
 		newAddSphere: addSphere,
 		newAddCylinder: addCylinder,
 		newAddCone: addCone,
-		newUndo: undoAdd,
 		newActiveIndex: activeIndex,
 		newTranslateX: 0.0,
 		newTranslateY: 0.0,
@@ -348,7 +373,9 @@ function setupGUI() {
 		newRotateZ: 0.0,
 		newScaleX: 1.0,
 		newScaleY: 1.0,
-		newScaleZ: 1.0
+		newScaleZ: 1.0,
+		newUndo: undoAdd,
+		newOutputToConsole: outputToConsole
 	};
 
 	var gui = new dat.GUI();
@@ -376,7 +403,6 @@ function setupGUI() {
 	f0.add(effectController, "newAddSphere").name("Add Sphere");
 	f0.add(effectController, "newAddCylinder").name("Add Cylinder");
 	f0.add(effectController, "newAddCone").name("Add Cone");
-	f0.add(effectController, "newUndo").name("Undo Add");
 	var f1 = gui.addFolder('Current');
 	function updateActiveIndexControl() {
 		f1.remove(activeIndexControl);
@@ -456,10 +482,20 @@ function setupGUI() {
 			bUpdate = true;
 		}
 	});
+	var f3 = gui.addFolder('Extras');
+	f3.add(effectController, "newUndo").name("Undo Add");
+	f3.add(effectController, "newOutputToConsole").name("Console Print");
 
 	f0.open();
 	f1.open();
 	f2.open();
+	f3.open();
+}
+
+function outputToConsole() {
+	for (var i = 0; i < geomObjects.length; i++) {
+		console.log( geomObjects[i].debugString() );
+	}
 }
 
 // -- End: GUI -- //
