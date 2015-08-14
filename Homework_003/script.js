@@ -375,7 +375,8 @@ function setupGUI() {
 		newScaleY: 1.0,
 		newScaleZ: 1.0,
 		newUndo: undoAdd,
-		newOutputToConsole: outputToConsole
+		newOutputToConsole: outputToConsole,
+		newRenderActiveOnly: bRenderActiveOnly
 	};
 
 	var gui = new dat.GUI();
@@ -424,6 +425,9 @@ function setupGUI() {
 			effectController.newScaleX = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[0];
 			effectController.newScaleY = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[1];
 			effectController.newScaleZ = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[2];
+
+			if (bRenderActiveOnly)
+				bUpdate = true;
 		}
 	}
 	var activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
@@ -485,6 +489,12 @@ function setupGUI() {
 	var f3 = gui.addFolder('Extras');
 	f3.add(effectController, "newUndo").name("Undo Add");
 	f3.add(effectController, "newOutputToConsole").name("Console Print");
+	f3.add( effectController, "newRenderActiveOnly").name("Active Only").onChange(function(value) {
+		if (effectController.newRenderActiveOnly != bRenderActiveOnly) {
+			bRenderActiveOnly = effectController.newRenderActiveOnly;
+			bUpdate = true;
+		}
+	});
 
 	f0.open();
 	f1.open();
@@ -504,6 +514,7 @@ var gl;
 var geomObjects = [];
 var bUpdate = true;
 var activeIndex = -1;
+var bRenderActiveOnly = false;
 
 window.onload = function init() {
 	var canvas = document.getElementById("gl-canvas");
@@ -530,9 +541,14 @@ function updateAndRender() {
 
 	bUpdate = false;
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	for (var i = 0; i < geomObjects.length; i++) {
-		geomObjects[i].update();
-		geomObjects[i].render();
+	if (!bRenderActiveOnly) {
+		for (var i = 0; i < geomObjects.length; i++) {
+			geomObjects[i].update();
+			geomObjects[i].render();
+		}
+	} else {
+		geomObjects[activeIndex].update();
+		geomObjects[activeIndex].render();
 	}
 	requestAnimFrame(updateAndRender);
 }
