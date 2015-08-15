@@ -25,11 +25,11 @@ var Object3D = function(id, className) {
 		vBufferId: undefined,  // shader buffer for the points
 		wBufferId: undefined,  // shader buffer for the wireframes
 		a_Location: undefined, // shader field for location of vertex
-		a_Affine: mat4()       // shader field for affine transformation
+		a_Model: mat4()        // shader field for model transformation
 	};
 
-	this.ap = { // affineProperties
-		affine: mat4(), 		// the collection of affine transformations (translate, rotate, & scale)
+	this.mp = { // modelProperties
+		model: mat4(), 		// the collection of model transformations (translate, rotate, & scale)
 		translate: mat4(),
 		rotate: mat4(),
 		scale: mat4()
@@ -53,12 +53,12 @@ Object3D.prototype.setupData = function() {
 	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
 	gl.enableVertexAttribArray(this.si.a_Location);
 
-	this.si.a_Affine = gl.getAttribLocation(gl.program, "a_Affine");
+	this.si.a_Model = gl.getAttribLocation(gl.program, "a_Model");
 }
 
 Object3D.prototype.translate = function(axis, value) { 
 	this.ui.translate[axis] = value;
-	this.ap.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
+	this.mp.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
 }
 
 Object3D.prototype.rotate = function(axis, value) {
@@ -66,20 +66,20 @@ Object3D.prototype.rotate = function(axis, value) {
 	var _x = rotate(this.ui.rotate[0], 1.0, 0.0, 0.0);
 	var _y = rotate(this.ui.rotate[1], 0.0, 1.0, 0.0);
 	var _z = rotate(this.ui.rotate[2], 0.0, 0.0, 1.0); 
-	this.ap.rotate = mult(_z, mult(_y, _x));
+	this.mp.rotate = mult(_z, mult(_y, _x));
 }
 
 Object3D.prototype.scale = function(axis, value) {
 	this.ui.scale[axis] = value; 
-	this.ap.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
+	this.mp.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
 }
 
-Object3D.prototype.updateAffineMatrix = function() {
-	this.ap.affine = mult(this.ap.translate, mult(this.ap.rotate, this.ap.scale));
+Object3D.prototype.updateModelMatrix = function() {
+	this.mp.model = mult(this.mp.translate, mult(this.mp.rotate, this.mp.scale));
 }
 
 Object3D.prototype.update = function() {
-	this.updateAffineMatrix();
+	this.updateModelMatrix();
 	
 	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
 	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
@@ -88,12 +88,12 @@ Object3D.prototype.update = function() {
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
 	gl.bufferData(gl.ARRAY_BUFFER, flatten(allWirePoints), gl.STATIC_DRAW);
 	
-	var a_Affine = this.si.a_Affine;
-	var affine = this.ap.affine;
-	gl.vertexAttrib4f( a_Affine+0, affine[0][0], affine[1][0], affine[2][0], affine[3][0] );
-	gl.vertexAttrib4f( a_Affine+1, affine[0][1], affine[1][1], affine[2][1], affine[3][1] );
-	gl.vertexAttrib4f( a_Affine+2, affine[0][2], affine[1][2], affine[2][2], affine[3][2] );
-	gl.vertexAttrib4f( a_Affine+3, affine[0][3], affine[1][3], affine[2][3], affine[3][3] );
+	var a_Model = this.si.a_Model;
+	var model = this.mp.model;
+	gl.vertexAttrib4f( a_Model+0, model[0][0], model[1][0], model[2][0], model[3][0] );
+	gl.vertexAttrib4f( a_Model+1, model[0][1], model[1][1], model[2][1], model[3][1] );
+	gl.vertexAttrib4f( a_Model+2, model[0][2], model[1][2], model[2][2], model[3][2] );
+	gl.vertexAttrib4f( a_Model+3, model[0][3], model[1][3], model[2][3], model[3][3] );
 }
 
 Object3D.prototype.render = function() {
