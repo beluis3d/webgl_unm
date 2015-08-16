@@ -1,11 +1,52 @@
 // script.js
 
+// --- Begin: Camera Class --- //
+
+var Camera = function() {
+
+	this.si = { // shader inputs
+		a_View: undefined     // shader field for view transformation
+	};
+
+	this.vp = { // viewProperties
+		view: mat4(),		// the collection of view transformations (translate, & rotate)
+		translate: mat4(),
+		rotate: mat4()
+	};
+
+	this.ui = {
+		translate: vec3(0.0, 0.0, 0.0),
+		rotate: vec3(0.0, 0.0, 0.0)
+	};
+
+}
+
+Camera.prototype.translate = function(axis, value) { 
+	this.ui.translate[axis] = value;
+	this.vp.translate = translate(-this.ui.translate[0], -this.ui.translate[1], -this.ui.translate[2]); 
+}
+
+Camera.prototype.rotate = function(axis, value) {
+	this.ui.rotate[axis] = value;
+	var _x = rotate(-this.ui.rotate[0], 1.0, 0.0, 0.0);
+	var _y = rotate(-this.ui.rotate[1], 0.0, 1.0, 0.0);
+	var _z = rotate(-this.ui.rotate[2], 0.0, 0.0, 1.0); 
+	this.vp.rotate = mult(_z, mult(_y, _x));
+}
+
+Camera.prototype.updateViewMatrix = function() {
+	this.vp.view = mult(this.vp.translate, this.vp.rotate);
+}
+
+// --- End: Camera Class --- //
+
 
 // --- Begin: Object3D Class --- //
 
-var Object3D = function(id, className) {
+var Object3D = function(id, className, camera) {
 	this.id = id;
 	this.className = (!!className) ? className : "Object3D";
+	this.camera = camera;
 
 	this.solid = {
 		curves: [],
@@ -25,7 +66,7 @@ var Object3D = function(id, className) {
 		vBufferId: undefined,  // shader buffer for the points
 		wBufferId: undefined,  // shader buffer for the wireframes
 		a_Location: undefined, // shader field for location of vertex
-		a_Model: mat4()        // shader field for model transformation
+		a_Model: undefined     // shader field for model transformation
 	};
 
 	this.mp = { // modelProperties
@@ -54,6 +95,7 @@ Object3D.prototype.setupData = function() {
 	gl.enableVertexAttribArray(this.si.a_Location);
 
 	this.si.a_Model = gl.getAttribLocation(gl.program, "a_Model");
+	this.camera.si.a_View = gl.getAttribLocation(gl.program, "a_View");
 }
 
 Object3D.prototype.translate = function(axis, value) { 
@@ -80,6 +122,7 @@ Object3D.prototype.updateModelMatrix = function() {
 
 Object3D.prototype.update = function() {
 	this.updateModelMatrix();
+	this.camera.updateViewMatrix();
 	
 	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
 	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
@@ -94,6 +137,13 @@ Object3D.prototype.update = function() {
 	gl.vertexAttrib4f( a_Model+1, model[0][1], model[1][1], model[2][1], model[3][1] );
 	gl.vertexAttrib4f( a_Model+2, model[0][2], model[1][2], model[2][2], model[3][2] );
 	gl.vertexAttrib4f( a_Model+3, model[0][3], model[1][3], model[2][3], model[3][3] );
+
+	var a_View = this.camera.si.a_View;
+	var view = this.camera.vp.view;
+	gl.vertexAttrib4f( a_View+0, view[0][0], view[1][0], view[2][0], view[3][0] );
+	gl.vertexAttrib4f( a_View+1, view[0][1], view[1][1], view[2][1], view[3][1] );
+	gl.vertexAttrib4f( a_View+2, view[0][2], view[1][2], view[2][2], view[3][2] );
+	gl.vertexAttrib4f( a_View+3, view[0][3], view[1][3], view[2][3], view[3][3] );
 }
 
 Object3D.prototype.render = function() {
@@ -151,7 +201,7 @@ Object3D.prototype._debugString = function(obj, indent) {
 
 // --- Begin: Sphere Class --- //
 
-var Sphere = function(id) { Object3D.call(this, id, "Sphere"); }
+var Sphere = function(id, camera) { Object3D.call(this, id, "Sphere", camera); }
 Sphere.prototype = Object.create(Object3D.prototype);
 Sphere.prototype.constructor = Sphere;
 
@@ -219,7 +269,7 @@ Sphere.prototype.createPoints = function() {
 
 // --- Begin: Cylinder Class --- //
 
-var Cylinder = function(id) { Object3D.call(this, id, "Cylinder"); }
+var Cylinder = function(id, camera) { Object3D.call(this, id, "Cylinder", camera); }
 Cylinder.prototype = Object.create(Object3D.prototype);
 Cylinder.prototype.constructor = Cylinder;
 
@@ -289,7 +339,7 @@ Cylinder.prototype.createPoints = function() {
 
 // --- Begin: Cone Class --- //
 
-var Cone = function(id) { Object3D.call(this, id, "Cone"); }
+var Cone = function(id, camera) { Object3D.call(this, id, "Cone", camera); }
 Cone.prototype = Object.create(Object3D.prototype);
 Cone.prototype.constructor = Cone;
 
@@ -376,23 +426,29 @@ function setupGUI() {
 		newScaleZ: 1.0,
 		newUndo: undoAdd,
 		newOutputToConsole: outputToConsole,
-		newRenderActiveOnly: bRenderActiveOnly
+		newRenderActiveOnly: bRenderActiveOnly,
+		newCameraTranslateX: 0.0,
+		newCameraTranslateY: 0.0,
+		newCameraTranslateZ: 0.0,
+		newCameraRotateX: 0.0,
+		newCameraRotateY: 0.0,
+		newCameraRotateZ: 0.0
 	};
 
 	var gui = new dat.GUI();
 	var f0 = gui.addFolder('Add');
 	function addSphere() {
-		geomObjects.push( new Sphere(geomObjects.length) );
+		geomObjects.push( new Sphere(geomObjects.length, camera) );
 		updateActiveIndexControl();
 		bUpdate = true;
 	}
 	function addCylinder() {
-		geomObjects.push( new Cylinder(geomObjects.length) );
+		geomObjects.push( new Cylinder(geomObjects.length, camera) );
 		updateActiveIndexControl();
 		bUpdate = true;
 	}
 	function addCone() {
-		geomObjects.push( new Cone(geomObjects.length) );
+		geomObjects.push( new Cone(geomObjects.length, camera) );
 		updateActiveIndexControl();
 		bUpdate = true;
 	}
@@ -495,6 +551,44 @@ function setupGUI() {
 			bUpdate = true;
 		}
 	});
+	var f4 = gui.addFolder('Camera');
+	f4.add( effectController, 'newCameraTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').onChange(function(value) {
+		if (effectController.newCameraTranslateX !== camera.ui.translate[0]) {
+			camera.translate(0, effectController.newCameraTranslateX);
+			bUpdate = true;
+		}
+	});
+	f4.add( effectController, 'newCameraTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').onChange(function(value) {
+		if (effectController.newCameraTranslateY !== camera.ui.translate[1]) {
+			camera.translate(1, effectController.newCameraTranslateY);
+			bUpdate = true;
+		}
+	});
+	f4.add( effectController, 'newCameraTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').onChange(function(value) {
+		if (effectController.newCameraTranslateZ !== camera.ui.translate[2]) {
+			camera.translate(2, effectController.newCameraTranslateZ);
+			bUpdate = true;
+		}
+	});
+	f4.add( effectController, 'newCameraRotateX', -180.0, 180.0).step(1.0).name('RotateX').onChange(function(value) {
+		if (effectController.newCameraRotateX !== camera.ui.rotate[0]) {
+			camera.rotate(0, effectController.newCameraRotateX);
+			bUpdate = true;
+		}
+	});
+	f4.add( effectController, 'newCameraRotateY', -180.0, 180.0).step(1.0).name('RotateY').onChange(function(value) {
+		if (effectController.newCameraRotateY !== camera.ui.rotate[1]) {
+			camera.rotate(1, effectController.newCameraRotateY);
+			bUpdate = true;
+		}
+	});
+	f4.add( effectController, 'newCameraRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').onChange(function(value) {
+		if (effectController.newCameraRotateZ !== camera.ui.rotate[2]) {
+			camera.rotate(2, effectController.newCameraRotateZ);
+			bUpdate = true;
+		}
+	});
+
 
 	f0.open();
 	f1.open();
@@ -515,6 +609,7 @@ var geomObjects = [];
 var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
+var camera = new Camera();
 
 window.onload = function init() {
 	var canvas = document.getElementById("gl-canvas");
