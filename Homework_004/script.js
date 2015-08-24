@@ -22,7 +22,7 @@ var Camera = function() {
 		right: 1.0,
 		bottom: -1.0,
 		top: 1.0,
-		fovy: 45.0, //degrees
+		fovy: 90.0, //degrees
 		aspect: 1.0, // width/height
 		near: -1.0,
 		far: 1.0,
@@ -30,7 +30,7 @@ var Camera = function() {
 	};
 
 	this.pp = { // projectionProperties
-		projection: ortho(this.ui.left, this.ui.right, this.ui.bottom, this.ui.top, this.ui.near, this.ui.far)
+		projection: mat4()
 	};
 
 }
@@ -50,6 +50,12 @@ Camera.prototype.rotate = function(axis, value) {
 
 Camera.prototype.updateViewMatrix = function() {
 	this.vp.view = mult(this.vp.translate, this.vp.rotate);
+}
+
+Camera.prototype.updateProjectionMatrix = function() {
+	this.pp.projection = (this.ui.isPerspective) ? 
+		perspective(this.ui.fovy, this.ui.aspect, this.ui.near, this.ui.far) : 
+		ortho(this.ui.left, this.ui.right, this.ui.bottom, this.ui.top, this.ui.near, this.ui.far) ;
 }
 
 // --- End: Camera Class --- //
@@ -138,6 +144,7 @@ Object3D.prototype.updateModelMatrix = function() {
 Object3D.prototype.update = function() {
 	this.updateModelMatrix();
 	this.camera.updateViewMatrix();
+	this.camera.updateProjectionMatrix();
 	
 	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
 	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
@@ -454,7 +461,8 @@ function setupGUI() {
 		newCameraTranslateZ: 0.0,
 		newCameraRotateX: 0.0,
 		newCameraRotateY: 0.0,
-		newCameraRotateZ: 0.0
+		newCameraRotateZ: 0.0,
+		newPerspectiveOn: false
 	};
 
 	var gui = new dat.GUI();
@@ -607,6 +615,12 @@ function setupGUI() {
 	f4.add( effectController, 'newCameraRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').onChange(function(value) {
 		if (effectController.newCameraRotateZ !== camera.ui.rotate[2]) {
 			camera.rotate(2, effectController.newCameraRotateZ);
+			bUpdate = true;
+		}
+	});
+	f4.add( effectController, "newPerspectiveOn").name("Perspective On").onChange(function(value) {
+		if (effectController.newPerspectiveOn != camera.ui.isPerspective) {
+			camera.ui.isPerspective = effectController.newPerspectiveOn;
 			bUpdate = true;
 		}
 	});
