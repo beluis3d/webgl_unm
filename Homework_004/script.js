@@ -1,10 +1,33 @@
 // script.js
 
+// --- Begin: Light Class --- //
+
+var Light = function() {
+
+	this.si1 = {
+		u_LightColor: undefined,
+		u_LightLocation: undefined
+	};
+
+	this.ui = {
+		color: vec3(),
+		location: vec3()
+	};
+
+}
+
+// --- End: Light Class --- //
+
 // --- Begin: Camera Class --- //
 
 var Camera = function() {
 
-	this.si = { // shader inputs
+	this.si1 = { // shader inputs
+		a_View: undefined,       // shader field for view transformation
+		a_Projection: undefined  // shader field for projection transformation
+	};
+
+	this.si2 = {
 		a_View: undefined,       // shader field for view transformation
 		a_Projection: undefined  // shader field for projection transformation
 	};
@@ -63,10 +86,11 @@ Camera.prototype.updateProjectionMatrix = function() {
 
 // --- Begin: Object3D Class --- //
 
-var Object3D = function(id, className, camera) {
+var Object3D = function(id, className, camera, lights) {
 	this.id = id;
 	this.className = (!!className) ? className : "Object3D";
 	this.camera = camera;
+	this.lights = lights;
 
 	this.solid = {
 		curves: [],
@@ -75,6 +99,14 @@ var Object3D = function(id, className, camera) {
 		topPoints: []
 	};
 
+	this.faces = []; // each element has three vertices of vec3
+	this.faceNormals = []; // each element is a vec3 normal of a face
+	this.botFaces = [];
+	this.botFaceNormals = [];
+	this.topFaces = [];
+	this.topFaceNormals = [];
+	this.color = vec4();
+
 	this.wire = {
 		curves: [],
 		points: [],
@@ -82,8 +114,16 @@ var Object3D = function(id, className, camera) {
 		topPoints: []	
 	};
 
-	this.si = { // shader inputs
-		vBufferId: undefined,  // shader buffer for the points
+	this.si1 = { // shader inputs
+		vBufferId: undefined,  // shader buffer for the points		
+		nBufferId: undefined,  // shader buffer for the normals
+		a_Location: undefined, // shader field for location of vertex
+		a_Model: undefined,    // shader field for model transformation
+		a_Normal: undefined,   // shader field for normal of the vertex
+		a_NormalMatrix: undefined // shader field for normal transformation
+	};
+
+	this.si2 = {
 		wBufferId: undefined,  // shader buffer for the wireframes
 		a_Location: undefined, // shader field for location of vertex
 		a_Model: undefined     // shader field for model transformation
@@ -91,6 +131,7 @@ var Object3D = function(id, className, camera) {
 
 	this.mp = { // modelProperties
 		model: mat4(), 		// the collection of model transformations (translate, rotate, & scale)
+		normal: mat4(),     // the normal matrix (aka, the inverse transpose of the model matrix)
 		translate: mat4(),
 		rotate: mat4(),
 		scale: mat4()
@@ -104,19 +145,43 @@ var Object3D = function(id, className, camera) {
 
 	this.setupData();
 	this.createPoints(); 
+	this.createNormals();
 }
 
 Object3D.prototype.setupData = function() {
-	this.si.vBufferId = gl.createBuffer();
-	this.si.wBufferId = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);	
-	this.si.a_Location = gl.getAttribLocation(gl.program, "a_Location");
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
-	gl.enableVertexAttribArray(this.si.a_Location);
+	this.si1.vBufferId = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.vBufferId);
+	this.si1.a_Location = gl.getAttribLocation(gl.program, "a_Location");
+	gl.vertexAttribPointer(this.si1.a_Location, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(this.si1.a_Location);
+	
+	this.si2.wBufferId = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si2.wBufferId);
+	this.si2.a_Location = gl.getAttribLocation(gl.program2, "a_Location");
+	gl.vertexAttribPointer(this.si2.a_Location, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(this.si2.a_Location);
+	
+	this.si1.nBufferId = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.nBufferId);
+	this.si1.a_Normal = gl.getAttribLocation(gl.program, "a_Normal");
+	gl.vertexAttribPointer(this.si1.a_Normal, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(this.si1.a_Normal);
 
-	this.si.a_Model = gl.getAttribLocation(gl.program, "a_Model");
-	this.camera.si.a_View = gl.getAttribLocation(gl.program, "a_View");
-	this.camera.si.a_Projection = gl.getAttribLocation(gl.program, "a_Projection");
+	this.si1.a_Model = gl.getUniformLocation(gl.program, "a_Model");
+	this.si2.a_Model = gl.getUniformLocation(gl.program2, "a_Model");
+
+	this.camera.si1.a_View = gl.getUniformLocation(gl.program, "a_View");
+	this.camera.si2.a_View = gl.getUniformLocation(gl.program2, "a_View");
+
+	this.camera.si1.a_Projection = gl.getUniformLocation(gl.program, "a_Projection");
+	this.camera.si2.a_Projection = gl.getUniformLocation(gl.program2, "a_Projection");
+
+	this.si1.a_NormalMatrix = gl.getUniformLocation(gl.program, "a_NormalMatrix");
+
+	for (var i = 0; i < this.lights.length; i++) {
+		this.lights[i].si1.u_LightColor = gl.getUniformLocation(gl.program, "u_LightColor");
+		this.lights[i].si1.u_LightLocation = gl.getUniformLocation(gl.program, "u_LightLocation");
+	}
 }
 
 Object3D.prototype.translate = function(axis, value) { 
@@ -141,44 +206,54 @@ Object3D.prototype.updateModelMatrix = function() {
 	this.mp.model = mult(this.mp.translate, mult(this.mp.rotate, this.mp.scale));
 }
 
+Object3D.prototype.updateNormalMatrix = function() {
+	this.mp.normal = normalMatrix(this.mp.model);
+}
+
 Object3D.prototype.update = function() {
 	this.updateModelMatrix();
 	this.camera.updateViewMatrix();
 	this.camera.updateProjectionMatrix();
+	this.updateNormalMatrix();
 	
-	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
-	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);
-	gl.bufferData(gl.ARRAY_BUFFER, flatten(allSolidPoints), gl.STATIC_DRAW);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
-	gl.bufferData(gl.ARRAY_BUFFER, flatten(allWirePoints), gl.STATIC_DRAW);
 	
-	var a_Model = this.si.a_Model;
-	var model = this.mp.model;
-	gl.vertexAttrib4f( a_Model+0, model[0][0], model[1][0], model[2][0], model[3][0] );
-	gl.vertexAttrib4f( a_Model+1, model[0][1], model[1][1], model[2][1], model[3][1] );
-	gl.vertexAttrib4f( a_Model+2, model[0][2], model[1][2], model[2][2], model[3][2] );
-	gl.vertexAttrib4f( a_Model+3, model[0][3], model[1][3], model[2][3], model[3][3] );
 
-	var a_View = this.camera.si.a_View;
-	var view = this.camera.vp.view;
-	gl.vertexAttrib4f( a_View+0, view[0][0], view[1][0], view[2][0], view[3][0] );
-	gl.vertexAttrib4f( a_View+1, view[0][1], view[1][1], view[2][1], view[3][1] );
-	gl.vertexAttrib4f( a_View+2, view[0][2], view[1][2], view[2][2], view[3][2] );
-	gl.vertexAttrib4f( a_View+3, view[0][3], view[1][3], view[2][3], view[3][3] );
-
-	var a_Projection = this.camera.si.a_Projection;
-	var projection = this.camera.pp.projection;
-	gl.vertexAttrib4f( a_Projection+0, projection[0][0], projection[1][0], projection[2][0], projection[3][0] );
-	gl.vertexAttrib4f( a_Projection+1, projection[0][1], projection[1][1], projection[2][1], projection[3][1] );
-	gl.vertexAttrib4f( a_Projection+2, projection[0][2], projection[1][2], projection[2][2], projection[3][2] );
-	gl.vertexAttrib4f( a_Projection+3, projection[0][3], projection[1][3], projection[2][3], projection[3][3] );
+	//---
+	
 }
 
 Object3D.prototype.render = function() {
 	gl.useProgram(gl.program);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.vBufferId);
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
+	//---
+	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
+	var allFaceNormals = this.faceNormals.concat(this.botFaceNormals).concat(this.topFaceNormals);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.vBufferId);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(allSolidPoints), gl.STATIC_DRAW);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.nBufferId);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(allFaceNormals), gl.STATIC_DRAW);
+	
+	var model = this.mp.model;
+	gl.uniformMatrix4fv( this.si1.a_Model, false, flatten(model) );
+	var view = this.camera.vp.view;
+	gl.uniformMatrix4fv( this.camera.si1.a_View, false, flatten(view) );
+	var projection = this.camera.pp.projection;
+	gl.uniformMatrix4fv( this.camera.si1.a_Projection, false, flatten(projection) );
+	var normalMatrix = this.mp.normal;
+	gl.uniformMatrix4fv( this.si1.a_NormalMatrix, false, flatten(normalMatrix) );
+	
+	var lightColors = [];
+	var lightLocations = [];
+	for (var i = 0; i < this.lights.length; i++) {
+		lightColors.push(this.lights[i].ui.color);
+		lightLocations.push(this.lights[i].ui.location);
+	}
+	var u_LightColor = this.lights[0].si1.u_LightColor; 
+	var u_LightLocation = this.lights[0].si1.u_LightLocation;
+	gl.uniform3fv(u_LightColor, flatten(lightColors));
+	gl.uniform3fv(u_LightLocation, flatten(lightLocations));
+	//---
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.vBufferId);
+	gl.vertexAttribPointer(this.si1.a_Location, 3, gl.FLOAT, false, 0, 0);
 	for (var i = 0; i < this.solid.curves.length; i++) {
 		gl.drawArrays(gl.TRIANGLE_STRIP, this.solid.curves[i].start, this.solid.curves[i].size);	
 	}
@@ -187,8 +262,17 @@ Object3D.prototype.render = function() {
 
 
 	gl.useProgram(gl.program2);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.si.wBufferId);
-	gl.vertexAttribPointer(this.si.a_Location, 3, gl.FLOAT, false, 0, 0);
+	//---
+	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si2.wBufferId);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(allWirePoints), gl.STATIC_DRAW);
+
+	gl.uniformMatrix4fv( this.si2.a_Model, false, flatten(model) );
+	gl.uniformMatrix4fv( this.camera.si2.a_View, false, flatten(view) );
+	gl.uniformMatrix4fv( this.camera.si2.a_Projection, false, flatten(projection) );
+	//---
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si2.wBufferId);
+	gl.vertexAttribPointer(this.si2.a_Location, 3, gl.FLOAT, false, 0, 0);
 	for (var i = 0; i < this.wire.curves.length; i++) {
 		gl.drawArrays(gl.LINE_STRIP, this.wire.curves[i].start, this.wire.curves[i].size);	
 	}
@@ -225,12 +309,80 @@ Object3D.prototype._debugString = function(obj, indent) {
 	return retStr;
 }
 
+Object3D.prototype.createNormals = function() {
+	for (var k = 0; k < this.solid.curves.length; k++) {
+		var kCurve = this.solid.curves[k];
+		for (var i = 0; i < kCurve.size; i++) {
+			var ind0 = ((i+0)%kCurve.size) + kCurve.start;
+			var ind1 = ((i+1)%kCurve.size) + kCurve.start;
+			var ind2 = ((i+2)%kCurve.size) + kCurve.start;
+
+			this.faces.push([
+				this.solid.points[ind0],
+				this.solid.points[ind1],
+				this.solid.points[ind2]]);
+		}
+	}
+	var botPoint = this.solid.botPoints[0];
+	this.botFaces.push([
+		this.solid.botPoints[3],
+		this.solid.botPoints[1],
+		this.solid.botPoints[2]]); // flat face for botVertex
+	for (var i = 0; i < this.solid.botPoints.length-1; i++) {
+		var ind0 = ((i+0)%(this.solid.botPoints.length-1)) + 1;
+		var ind1 = ((i+1)%(this.solid.botPoints.length-1)) + 1;
+		this.botFaces.push([
+			botPoint,
+			this.solid.botPoints[ind0],
+			this.solid.botPoints[ind1]]);
+	}
+	var topPoint = this.solid.topPoints[0];
+	this.topFaces.push([
+		this.solid.topPoints[3],
+		this.solid.topPoints[1],
+		this.solid.topPoints[2]]); // flat face for topVertex
+	for (var i = 0; i < this.solid.topPoints.length-1; i++) {
+		var ind0 = ((i+0)%(this.solid.topPoints.length-1)) + 1;
+		var ind1 = ((i+1)%(this.solid.topPoints.length-1)) + 1;
+		this.topFaces.push([
+			topPoint,
+			this.solid.topPoints[ind0],
+			this.solid.topPoints[ind1]]);
+	}
+
+
+	for (var ii = 0; ii < this.faces.length; ii++) {
+		var iFace = this.faces[ii];
+		var vecA = subtract(iFace[0], iFace[1]);
+		var vecB = subtract(iFace[2], iFace[1]);
+		var iNormal = normalize( cross(vecA, vecB) );
+		if (ii%2 == 1) iNormal = negate(iNormal);
+		this.faceNormals.push(iNormal);
+	}
+	for (var ii = 0; ii < this.botFaces.length; ii++) {
+		var iFace = this.botFaces[ii];
+		var vecA = subtract(iFace[2], iFace[1]);
+		var vecB = subtract(iFace[0], iFace[1]);
+		var iNormal = normalize( cross(vecA, vecB) );
+		iNormal = negate(iNormal);
+		this.botFaceNormals.push(iNormal);
+	}
+	for (var ii = 0; ii < this.topFaces.length; ii++) {
+		var iFace = this.topFaces[ii];
+		var vecA = subtract(iFace[2], iFace[1]);
+		var vecB = subtract(iFace[0], iFace[1]);
+		var iNormal = normalize( cross(vecA, vecB) );
+		// no need to negate here
+		this.topFaceNormals.push(iNormal);
+	}
+}
+
 // --- End: Object3D Class --- //
 
 
 // --- Begin: Sphere Class --- //
 
-var Sphere = function(id, camera) { Object3D.call(this, id, "Sphere", camera); }
+var Sphere = function(id, camera, lights) { Object3D.call(this, id, "Sphere", camera, lights); }
 Sphere.prototype = Object.create(Object3D.prototype);
 Sphere.prototype.constructor = Sphere;
 
@@ -241,29 +393,30 @@ Sphere.prototype.createPoints = function() {
 	var radius = 1.0;
 
 	// Triangle Points
-	for (var k = 0+dk; k < 180.0-dk; k+=dk) {
+	for (var k = 180.0-dk; k > 0.0+dk; k-=dk) {
 		var kCurve = { start: this.solid.points.length, size: 0 };
 		for (var i = 0.0; i <= 360.0; i+=di) {
 			var p1 = polarToCartesian(radius,i,k);
-			var p2 = polarToCartesian(radius,i,k+dk);
+			var p2 = polarToCartesian(radius,i,k-dk);
 			
 			kCurve.size+=2;
 			this.solid.points.push( p1, p2 );
 		}
 		this.solid.curves.push( kCurve );
 	}
-	var botPoint = polarToCartesian(radius,0.0,0.0);
+	var botPoint = polarToCartesian(radius,0.0,180.0);
 	this.solid.botPoints = [botPoint];
 	for(var i = 0; i <= 360.0; i+=di) {
-		var p1 = polarToCartesian(radius,i,0.0+dk);
+		var p1 = polarToCartesian(radius,i,180.0-dk);
 		this.solid.botPoints.push(p1);
 	}
-	var topPoint = polarToCartesian(radius,0.0,180.0);
+	var topPoint = polarToCartesian(radius,0.0,0.0);
 	this.solid.topPoints = [topPoint];
 	for(var i = 0; i <= 360.0; i+=di) {
-		var p1 = polarToCartesian(radius,i,180.0-dk);
+		var p1 = polarToCartesian(radius,i,0.0+dk);
 		this.solid.topPoints.push(p1);
 	}
+
 
 	//Wire Points
 	for (var k = 0+dk; k < 180.0-dk; k+=dk) {
@@ -298,7 +451,7 @@ Sphere.prototype.createPoints = function() {
 
 // --- Begin: Cylinder Class --- //
 
-var Cylinder = function(id, camera) { Object3D.call(this, id, "Cylinder", camera); }
+var Cylinder = function(id, camera, lights) { Object3D.call(this, id, "Cylinder", camera, lights); }
 Cylinder.prototype = Object.create(Object3D.prototype);
 Cylinder.prototype.constructor = Cylinder;
 
@@ -368,7 +521,7 @@ Cylinder.prototype.createPoints = function() {
 
 // --- Begin: Cone Class --- //
 
-var Cone = function(id, camera) { Object3D.call(this, id, "Cone", camera); }
+var Cone = function(id, camera, lights) { Object3D.call(this, id, "Cone", camera, lights); }
 Cone.prototype = Object.create(Object3D.prototype);
 Cone.prototype.constructor = Cone;
 
@@ -468,17 +621,17 @@ function setupGUI() {
 	var gui = new dat.GUI();
 	var f0 = gui.addFolder('Add');
 	function addSphere() {
-		geomObjects.push( new Sphere(geomObjects.length, camera) );
+		geomObjects.push( new Sphere(geomObjects.length, camera, lights) );
 		updateActiveIndexControl();
 		bUpdate = true;
 	}
 	function addCylinder() {
-		geomObjects.push( new Cylinder(geomObjects.length, camera) );
+		geomObjects.push( new Cylinder(geomObjects.length, camera, lights) );
 		updateActiveIndexControl();
 		bUpdate = true;
 	}
 	function addCone() {
-		geomObjects.push( new Cone(geomObjects.length, camera) );
+		geomObjects.push( new Cone(geomObjects.length, camera, lights) );
 		updateActiveIndexControl();
 		bUpdate = true;
 	}
@@ -646,6 +799,12 @@ var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
 var camera = new Camera();
+var lights = [new Light(), new Light()];
+lights[0].ui.color = vec3(1.0, 0.1, 0.1);
+lights[0].ui.location = vec3(1.0, 1.0, 1.0);
+lights[1].ui.color = vec3(0.1, 1.0, 0.1);
+lights[1].ui.location = vec3(-1.0, -1.0, -1.0);
+
 
 window.onload = function init() {
 	var canvas = document.getElementById("gl-canvas");
