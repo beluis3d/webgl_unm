@@ -1,5 +1,14 @@
 // script.js
 
+// --- Begin: Object3D Class --- //
+
+var Object3D = function(id, className) {
+	this.id = id;
+	this.className = (!!className) ? className : "Object3D";
+}
+
+// --- End: Object3D Class --- //
+
 // --- Begin: Light Class --- //
 
 var Light = function() {
@@ -96,8 +105,7 @@ Camera.prototype.updateProjectionMatrix = function() {
 // --- Begin: Mesh Class --- //
 
 var Mesh = function(id, className, camera, lights) {
-	this.id = id;
-	this.className = (!!className) ? className : "Mesh";
+	Object3D.call(this, id, (!!className) ? className : "Mesh");
 	this.camera = camera;
 	this.lights = lights;
 
@@ -156,6 +164,9 @@ var Mesh = function(id, className, camera, lights) {
 	this.createPoints(); 
 	this.createNormals();
 }
+
+Mesh.prototype = Object.create(Object3D.prototype);
+Mesh.prototype.constructor = Mesh;
 
 Mesh.prototype.setupData = function() {
 	this.si1.vBufferId = gl.createBuffer();
