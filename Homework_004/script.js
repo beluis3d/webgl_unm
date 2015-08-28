@@ -93,11 +93,11 @@ Camera.prototype.updateProjectionMatrix = function() {
 // --- End: Camera Class --- //
 
 
-// --- Begin: Object3D Class --- //
+// --- Begin: Mesh Class --- //
 
-var Object3D = function(id, className, camera, lights) {
+var Mesh = function(id, className, camera, lights) {
 	this.id = id;
-	this.className = (!!className) ? className : "Object3D";
+	this.className = (!!className) ? className : "Mesh";
 	this.camera = camera;
 	this.lights = lights;
 
@@ -157,7 +157,7 @@ var Object3D = function(id, className, camera, lights) {
 	this.createNormals();
 }
 
-Object3D.prototype.setupData = function() {
+Mesh.prototype.setupData = function() {
 	this.si1.vBufferId = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.vBufferId);
 	this.si1.a_Location = gl.getAttribLocation(gl.program, "a_Location");
@@ -193,12 +193,12 @@ Object3D.prototype.setupData = function() {
 	}
 }
 
-Object3D.prototype.translate = function(axis, value) { 
+Mesh.prototype.translate = function(axis, value) { 
 	this.ui.translate[axis] = value;
 	this.mp.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
 }
 
-Object3D.prototype.rotate = function(axis, value) {
+Mesh.prototype.rotate = function(axis, value) {
 	this.ui.rotate[axis] = value;
 	var _x = rotate(this.ui.rotate[0], 1.0, 0.0, 0.0);
 	var _y = rotate(this.ui.rotate[1], 0.0, 1.0, 0.0);
@@ -206,20 +206,20 @@ Object3D.prototype.rotate = function(axis, value) {
 	this.mp.rotate = mult(_z, mult(_y, _x));
 }
 
-Object3D.prototype.scale = function(axis, value) {
+Mesh.prototype.scale = function(axis, value) {
 	this.ui.scale[axis] = value; 
 	this.mp.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
 }
 
-Object3D.prototype.updateModelMatrix = function() {
+Mesh.prototype.updateModelMatrix = function() {
 	this.mp.model = mult(this.mp.translate, mult(this.mp.rotate, this.mp.scale));
 }
 
-Object3D.prototype.updateNormalMatrix = function() {
+Mesh.prototype.updateNormalMatrix = function() {
 	this.mp.normal = normalMatrix(this.mp.model);
 }
 
-Object3D.prototype.update = function() {
+Mesh.prototype.update = function() {
 	this.updateModelMatrix();
 	this.camera.updateViewMatrix();
 	this.camera.updateProjectionMatrix();
@@ -234,7 +234,7 @@ Object3D.prototype.update = function() {
 	
 }
 
-Object3D.prototype.render = function() {
+Mesh.prototype.render = function() {
 	gl.useProgram(gl.program);
 	//---
 	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
@@ -292,15 +292,15 @@ Object3D.prototype.render = function() {
 	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length+this.wire.botPoints.length, this.wire.topPoints.length);
 }
 
-Object3D.prototype.toString = function() {
+Mesh.prototype.toString = function() {
 	return this.id;
 }
 
-Object3D.prototype.debugString = function() {
+Mesh.prototype.debugString = function() {
 	return this._debugString(this, "");
 }
 
-Object3D.prototype._debugString = function(obj, indent) {
+Mesh.prototype._debugString = function(obj, indent) {
 	if (!obj) return "undefined";
 
 	var retStr = "";
@@ -321,7 +321,7 @@ Object3D.prototype._debugString = function(obj, indent) {
 	return retStr;
 }
 
-Object3D.prototype.createNormals = function() {
+Mesh.prototype.createNormals = function() {
 	for (var k = 0; k < this.solid.curves.length; k++) {
 		var kCurve = this.solid.curves[k];
 		for (var i = 0; i < kCurve.size; i++) {
@@ -389,13 +389,13 @@ Object3D.prototype.createNormals = function() {
 	}
 }
 
-// --- End: Object3D Class --- //
+// --- End: Mesh Class --- //
 
 
 // --- Begin: Sphere Class --- //
 
-var Sphere = function(id, camera, lights) { Object3D.call(this, id, "Sphere", camera, lights); }
-Sphere.prototype = Object.create(Object3D.prototype);
+var Sphere = function(id, camera, lights) { Mesh.call(this, id, "Sphere", camera, lights); }
+Sphere.prototype = Object.create(Mesh.prototype);
 Sphere.prototype.constructor = Sphere;
 
 Sphere.prototype.createPoints = function() {
@@ -463,8 +463,8 @@ Sphere.prototype.createPoints = function() {
 
 // --- Begin: Cylinder Class --- //
 
-var Cylinder = function(id, camera, lights) { Object3D.call(this, id, "Cylinder", camera, lights); }
-Cylinder.prototype = Object.create(Object3D.prototype);
+var Cylinder = function(id, camera, lights) { Mesh.call(this, id, "Cylinder", camera, lights); }
+Cylinder.prototype = Object.create(Mesh.prototype);
 Cylinder.prototype.constructor = Cylinder;
 
 Cylinder.prototype.createPoints = function() {
@@ -533,8 +533,8 @@ Cylinder.prototype.createPoints = function() {
 
 // --- Begin: Cone Class --- //
 
-var Cone = function(id, camera, lights) { Object3D.call(this, id, "Cone", camera, lights); }
-Cone.prototype = Object.create(Object3D.prototype);
+var Cone = function(id, camera, lights) { Mesh.call(this, id, "Cone", camera, lights); }
+Cone.prototype = Object.create(Mesh.prototype);
 Cone.prototype.constructor = Cone;
 
 Cone.prototype.createPoints = function() {
