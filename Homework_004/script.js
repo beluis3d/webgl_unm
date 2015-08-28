@@ -9,11 +9,20 @@ var Light = function() {
 		u_LightLocation: undefined
 	};
 
-	this.ui = {
-		color: vec3(),
-		location: vec3()
+	this.lp = { //lightProperties
+		color: vec3()
 	};
 
+	this.ui = {
+		color: vec3(),
+		location: vec3(),
+		bOn: true			// is the light on?
+	};
+
+}
+
+Light.prototype.updateColorVector = function() {
+	this.lp.color = scale((this.ui.bOn ? 1.0 : 0.0), this.ui.color);
 }
 
 // --- End: Light Class --- //
@@ -215,6 +224,9 @@ Object3D.prototype.update = function() {
 	this.camera.updateViewMatrix();
 	this.camera.updateProjectionMatrix();
 	this.updateNormalMatrix();
+	for (var  i = 0; i < this.lights.length; i++) {
+		this.lights[i].updateColorVector();
+	}
 	
 	
 
@@ -244,7 +256,7 @@ Object3D.prototype.render = function() {
 	var lightColors = [];
 	var lightLocations = [];
 	for (var i = 0; i < this.lights.length; i++) {
-		lightColors.push(this.lights[i].ui.color);
+		lightColors.push(this.lights[i].lp.color);
 		lightLocations.push(this.lights[i].ui.location);
 	}
 	var u_LightColor = this.lights[0].si1.u_LightColor; 
@@ -802,8 +814,11 @@ var camera = new Camera();
 var lights = [new Light(), new Light()];
 lights[0].ui.color = vec3(1.0, 0.1, 0.1);
 lights[0].ui.location = vec3(1.0, 1.0, 1.0);
+lights[0].ui.bOn = true;
 lights[1].ui.color = vec3(0.1, 1.0, 0.1);
 lights[1].ui.location = vec3(-1.0, -1.0, -1.0);
+lights[1].ui.bOn = true;
+
 
 
 window.onload = function init() {
