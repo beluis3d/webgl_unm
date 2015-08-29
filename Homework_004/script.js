@@ -633,8 +633,7 @@ var gui = {
 	f0: null,
 	f1: null,
 	f2: null,
-	f3: null,
-	f4: null
+	f3: null
 };
 
 function setupGUI() {
@@ -655,12 +654,6 @@ function setupGUI() {
 		newUndo: undoAdd,
 		newOutputToConsole: outputToConsole,
 		newRenderActiveOnly: bRenderActiveOnly,
-		newCameraTranslateX: 0.0,
-		newCameraTranslateY: 0.0,
-		newCameraTranslateZ: 0.0,
-		newCameraRotateX: 0.0,
-		newCameraRotateY: 0.0,
-		newCameraRotateZ: 0.0,
 		newPerspectiveOn: false
 	};
 
@@ -735,44 +728,7 @@ function setupGUI() {
 			bUpdate = true;
 		}
 	});
-	gui.f4 = gui.datGui.addFolder('Camera');
-	gui.f4.add( gui.effectController, 'newCameraTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').onChange(function(value) {
-		if (gui.effectController.newCameraTranslateX !== camera.ui.translate[0]) {
-			camera.translate(0, gui.effectController.newCameraTranslateX);
-			bUpdate = true;
-		}
-	});
-	gui.f4.add( gui.effectController, 'newCameraTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').onChange(function(value) {
-		if (gui.effectController.newCameraTranslateY !== camera.ui.translate[1]) {
-			camera.translate(1, gui.effectController.newCameraTranslateY);
-			bUpdate = true;
-		}
-	});
-	gui.f4.add( gui.effectController, 'newCameraTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').onChange(function(value) {
-		if (gui.effectController.newCameraTranslateZ !== camera.ui.translate[2]) {
-			camera.translate(2, gui.effectController.newCameraTranslateZ);
-			bUpdate = true;
-		}
-	});
-	gui.f4.add( gui.effectController, 'newCameraRotateX', -180.0, 180.0).step(1.0).name('RotateX').onChange(function(value) {
-		if (gui.effectController.newCameraRotateX !== camera.ui.rotate[0]) {
-			camera.rotate(0, gui.effectController.newCameraRotateX);
-			bUpdate = true;
-		}
-	});
-	gui.f4.add( gui.effectController, 'newCameraRotateY', -180.0, 180.0).step(1.0).name('RotateY').onChange(function(value) {
-		if (gui.effectController.newCameraRotateY !== camera.ui.rotate[1]) {
-			camera.rotate(1, gui.effectController.newCameraRotateY);
-			bUpdate = true;
-		}
-	});
-	gui.f4.add( gui.effectController, 'newCameraRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').onChange(function(value) {
-		if (gui.effectController.newCameraRotateZ !== camera.ui.rotate[2]) {
-			camera.rotate(2, gui.effectController.newCameraRotateZ);
-			bUpdate = true;
-		}
-	});
-	gui.f4.add( gui.effectController, "newPerspectiveOn").name("Perspective On").onChange(function(value) {
+	gui.f3.add( gui.effectController, "newPerspectiveOn").name("Perspective On").onChange(function(value) {
 		if (gui.effectController.newPerspectiveOn != camera.ui.isPerspective) {
 			camera.ui.isPerspective = gui.effectController.newPerspectiveOn;
 			bUpdate = true;
@@ -893,7 +849,7 @@ function updateAndRender() {
 
 	bUpdate = false;
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	if (!bRenderActiveOnly || !(geomObjects[activeIndex] instanceof Mesh)) {
+	if (!(bRenderActiveOnly && (geomObjects[activeIndex] instanceof Mesh))) {
 		for (var i = 0; i < geomObjects.length; i++) {
 			if (geomObjects[i] instanceof Mesh) {
 				geomObjects[i].update();
