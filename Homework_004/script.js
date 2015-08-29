@@ -28,6 +28,10 @@ var Object3D = function(id, className) {
 	};
 }
 
+Object3D.prototype.toString = function() {
+	return this.id;
+}
+
 // --- End: Object3D Class --- //
 
 // --- Begin: Light Class --- //
@@ -313,10 +317,6 @@ Mesh.prototype.render = function() {
 	}
 	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length, this.wire.botPoints.length);
 	gl.drawArrays(gl.LINE_STRIP, this.wire.points.length+this.wire.botPoints.length, this.wire.topPoints.length);
-}
-
-Mesh.prototype.toString = function() {
-	return this.id;
 }
 
 Mesh.prototype.debugString = function() {
@@ -784,6 +784,7 @@ function setupGUI() {
 	gui.f1.open();
 	gui.f2.open();
 	gui.f3.open();
+	addCamera();
 }
 
 function addSphere() {
@@ -800,6 +801,12 @@ function addCylinder() {
 
 function addCone() {
 	geomObjects.push( new Cone(geomObjects.length, camera, lights) );
+	updateActiveIndexControl();
+	bUpdate = true;
+}
+
+function addCamera() {
+	geomObjects.push( camera );
 	updateActiveIndexControl();
 	bUpdate = true;
 }
@@ -850,7 +857,7 @@ var geomObjects = [];
 var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
-var camera = new Camera(100);
+var camera = new Camera(0);
 var lights = [new Light(), new Light()];
 lights[0].ui.color = vec3(1.0, 0.1, 0.1);
 lights[0].ui.location = vec3(1.0, 1.0, 1.0);
@@ -886,10 +893,12 @@ function updateAndRender() {
 
 	bUpdate = false;
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	if (!bRenderActiveOnly) {
+	if (!bRenderActiveOnly || !(geomObjects[activeIndex] instanceof Mesh)) {
 		for (var i = 0; i < geomObjects.length; i++) {
-			geomObjects[i].update();
-			geomObjects[i].render();
+			if (geomObjects[i] instanceof Mesh) {
+				geomObjects[i].update();
+				geomObjects[i].render();
+			}
 		}
 	} else {
 		geomObjects[activeIndex].update();
