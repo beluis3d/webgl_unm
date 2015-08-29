@@ -5,6 +5,27 @@
 var Object3D = function(id, className) {
 	this.id = id;
 	this.className = (!!className) ? className : "Object3D";
+
+	this.si1 = { // shader inputs for program1
+		a_Transformation: undefined,    // shader field for model/view transformation
+	};
+
+	this.si2 = { //shader inputs for program2
+		a_Transformation: undefined     // shader field for model/view transformation
+	};
+
+	this.tp = { // transformation properties
+		transform: mat4(),
+		translate: mat4(),
+		rotate: mat4(),
+		scale: mat4()
+	};
+
+	this.ui = {
+		translate: vec3(0.0, 0.0, 0.0),
+		rotate: vec3(0.0, 0.0, 0.0),
+		scale: vec3(1.0, 1.0, 1.0)
+	};
 }
 
 // --- End: Object3D Class --- //
@@ -38,37 +59,38 @@ Light.prototype.updateColorVector = function() {
 
 // --- Begin: Camera Class --- //
 
-var Camera = function() {
+var Camera = function(id, className) {
+	Object3D.call(this, id, (!!className) ? className : "Camera");
 
-	this.si1 = { // shader inputs
-		a_View: undefined,       // shader field for view transformation
-		a_Projection: undefined  // shader field for projection transformation
-	};
+	//this.si1 = { // shader inputs for program1
+		//a_Transformation: undefined,       // shader field for view transformation
+		this.si1.a_Projection = undefined;   // shader field for projection transformation
+	//};
 
-	this.si2 = {
-		a_View: undefined,       // shader field for view transformation
-		a_Projection: undefined  // shader field for projection transformation
-	};
+	//this.si2 = { // shader inputs for program2
+		//a_Transformation: undefined,       // shader field for view transformation
+		this.si2.a_Projection = undefined;   // shader field for projection transformation
+	//};
 
-	this.vp = { // viewProperties
-		view: mat4(),		// the collection of view transformations (translate, & rotate)
-		translate: mat4(),
-		rotate: mat4()
-	};
+	//this.tp = { // transformation properties
+	//	transform: mat4(),		// the collection of view transformations (translate, & rotate)
+	//	translate: mat4(),
+	//	rotate: mat4()
+	//};
 
-	this.ui = {
-		translate: vec3(0.0, 0.0, 0.0),
-		rotate: vec3(0.0, 0.0, 0.0),
-		left: -1.0,
-		right: 1.0,
-		bottom: -1.0,
-		top: 1.0,
-		fovy: 90.0, //degrees
-		aspect: 1.0, // width/height
-		near: -1.0,
-		far: 1.0,
-		isPerspective: false
-	};
+	//this.ui = {
+		//translate: vec3(0.0, 0.0, 0.0),
+		//rotate: vec3(0.0, 0.0, 0.0),
+		this.ui.left = -1.0;
+		this.ui.right = 1.0;
+		this.ui.bottom = -1.0;
+		this.ui.top = 1.0;
+		this.ui.fovy = 90.0; //degrees
+		this.ui.aspect = 1.0; // width/height
+		this.ui.near = -1.0;
+		this.ui.far = 1.0;
+		this.ui.isPerspective = false;
+	//};
 
 	this.pp = { // projectionProperties
 		projection: mat4()
@@ -76,9 +98,12 @@ var Camera = function() {
 
 }
 
+Camera.prototype = Object.create(Object3D.prototype);
+Camera.prototype.constructor = Camera;
+
 Camera.prototype.translate = function(axis, value) { 
 	this.ui.translate[axis] = value;
-	this.vp.translate = translate(-this.ui.translate[0], -this.ui.translate[1], -this.ui.translate[2]); 
+	this.tp.translate = translate(-this.ui.translate[0], -this.ui.translate[1], -this.ui.translate[2]); 
 }
 
 Camera.prototype.rotate = function(axis, value) {
@@ -86,11 +111,11 @@ Camera.prototype.rotate = function(axis, value) {
 	var _x = rotate(-this.ui.rotate[0], 1.0, 0.0, 0.0);
 	var _y = rotate(-this.ui.rotate[1], 0.0, 1.0, 0.0);
 	var _z = rotate(-this.ui.rotate[2], 0.0, 0.0, 1.0); 
-	this.vp.rotate = mult(_z, mult(_y, _x));
+	this.tp.rotate = mult(_z, mult(_y, _x));
 }
 
 Camera.prototype.updateViewMatrix = function() {
-	this.vp.view = mult(this.vp.translate, this.vp.rotate);
+	this.tp.transform = mult(this.tp.translate, this.tp.rotate);
 }
 
 Camera.prototype.updateProjectionMatrix = function() {
@@ -131,34 +156,28 @@ var Mesh = function(id, className, camera, lights) {
 		topPoints: []	
 	};
 
-	this.si1 = { // shader inputs
-		vBufferId: undefined,  // shader buffer for the points		
-		nBufferId: undefined,  // shader buffer for the normals
-		a_Location: undefined, // shader field for location of vertex
-		a_Model: undefined,    // shader field for model transformation
-		a_Normal: undefined,   // shader field for normal of the vertex
-		a_NormalMatrix: undefined // shader field for normal transformation
-	};
+	//this.si1 = { // shader inputs
+		//a_Transformation: undefined,   // shader field for model transformation
+		this.si1.vBufferId = undefined;  // shader buffer for the points		
+		this.si1.nBufferId = undefined;  // shader buffer for the normals
+		this.si1.a_Location = undefined; // shader field for location of vertex	
+		this.si1.a_Normal = undefined;   // shader field for normal of the vertex
+		this.si1.a_NormalMatrix = undefined; // shader field for normal transformation
+	//};
+	
+	//this.si2 = { // shader inputs for program2
+		//a_Transformation: undefined,   // shader field for model transformation
+		this.si2.wBufferId = undefined;  // shader buffer for the wireframes
+		this.si2.a_Location = undefined; // shader field for location of vertex
+	//};
 
-	this.si2 = {
-		wBufferId: undefined,  // shader buffer for the wireframes
-		a_Location: undefined, // shader field for location of vertex
-		a_Model: undefined     // shader field for model transformation
-	};
-
-	this.mp = { // modelProperties
-		model: mat4(), 		// the collection of model transformations (translate, rotate, & scale)
-		normal: mat4(),     // the normal matrix (aka, the inverse transpose of the model matrix)
-		translate: mat4(),
-		rotate: mat4(),
-		scale: mat4()
-	};
-
-	this.ui = {
-		translate: vec3(0.0, 0.0, 0.0),
-		rotate: vec3(0.0, 0.0, 0.0),
-		scale: vec3(1.0, 1.0, 1.0)
-	}
+	//this.tp = { // transformation properties
+		//transform: mat4(),   		 // the collection of model transformations (translate, rotate, & scale)
+		this.tp.normal = mat4();     // the normal matrix (aka, the inverse transpose of the model matrix)
+		//translate: mat4(),
+		//rotate: mat4(),
+		//scale: mat4()
+	//};
 
 	this.setupData();
 	this.createPoints(); 
@@ -187,11 +206,11 @@ Mesh.prototype.setupData = function() {
 	gl.vertexAttribPointer(this.si1.a_Normal, 3, gl.FLOAT, false, 0, 0);
 	gl.enableVertexAttribArray(this.si1.a_Normal);
 
-	this.si1.a_Model = gl.getUniformLocation(gl.program, "a_Model");
-	this.si2.a_Model = gl.getUniformLocation(gl.program2, "a_Model");
+	this.si1.a_Transformation = gl.getUniformLocation(gl.program, "a_Model");
+	this.si2.a_Transformation = gl.getUniformLocation(gl.program2, "a_Model");
 
-	this.camera.si1.a_View = gl.getUniformLocation(gl.program, "a_View");
-	this.camera.si2.a_View = gl.getUniformLocation(gl.program2, "a_View");
+	this.camera.si1.a_Transformation = gl.getUniformLocation(gl.program, "a_View");
+	this.camera.si2.a_Transformation = gl.getUniformLocation(gl.program2, "a_View");
 
 	this.camera.si1.a_Projection = gl.getUniformLocation(gl.program, "a_Projection");
 	this.camera.si2.a_Projection = gl.getUniformLocation(gl.program2, "a_Projection");
@@ -206,7 +225,7 @@ Mesh.prototype.setupData = function() {
 
 Mesh.prototype.translate = function(axis, value) { 
 	this.ui.translate[axis] = value;
-	this.mp.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
+	this.tp.translate = translate(this.ui.translate[0], this.ui.translate[1], this.ui.translate[2]); 
 }
 
 Mesh.prototype.rotate = function(axis, value) {
@@ -214,20 +233,20 @@ Mesh.prototype.rotate = function(axis, value) {
 	var _x = rotate(this.ui.rotate[0], 1.0, 0.0, 0.0);
 	var _y = rotate(this.ui.rotate[1], 0.0, 1.0, 0.0);
 	var _z = rotate(this.ui.rotate[2], 0.0, 0.0, 1.0); 
-	this.mp.rotate = mult(_z, mult(_y, _x));
+	this.tp.rotate = mult(_z, mult(_y, _x));
 }
 
 Mesh.prototype.scale = function(axis, value) {
 	this.ui.scale[axis] = value; 
-	this.mp.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
+	this.tp.scale = scalem(this.ui.scale[0], this.ui.scale[1], this.ui.scale[2]);
 }
 
 Mesh.prototype.updateModelMatrix = function() {
-	this.mp.model = mult(this.mp.translate, mult(this.mp.rotate, this.mp.scale));
+	this.tp.transform = mult(this.tp.translate, mult(this.tp.rotate, this.tp.scale));
 }
 
 Mesh.prototype.updateNormalMatrix = function() {
-	this.mp.normal = normalMatrix(this.mp.model);
+	this.tp.normal = normalMatrix(this.tp.transform);
 }
 
 Mesh.prototype.update = function() {
@@ -255,14 +274,10 @@ Mesh.prototype.render = function() {
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.nBufferId);
 	gl.bufferData(gl.ARRAY_BUFFER, flatten(allFaceNormals), gl.STATIC_DRAW);
 	
-	var model = this.mp.model;
-	gl.uniformMatrix4fv( this.si1.a_Model, false, flatten(model) );
-	var view = this.camera.vp.view;
-	gl.uniformMatrix4fv( this.camera.si1.a_View, false, flatten(view) );
-	var projection = this.camera.pp.projection;
-	gl.uniformMatrix4fv( this.camera.si1.a_Projection, false, flatten(projection) );
-	var normalMatrix = this.mp.normal;
-	gl.uniformMatrix4fv( this.si1.a_NormalMatrix, false, flatten(normalMatrix) );
+	gl.uniformMatrix4fv( this.si1.a_Transformation, false, flatten(this.tp.transform) ); // Model Matrix
+	gl.uniformMatrix4fv( this.camera.si1.a_Transformation, false, flatten(this.camera.tp.transform) ); // View Matrix
+	gl.uniformMatrix4fv( this.camera.si1.a_Projection, false, flatten(this.camera.pp.projection) ); // Projection Matrix
+	gl.uniformMatrix4fv( this.si1.a_NormalMatrix, false, flatten(this.tp.normal) ); // Normal Matrix
 	
 	var lightColors = [];
 	var lightLocations = [];
@@ -290,9 +305,9 @@ Mesh.prototype.render = function() {
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si2.wBufferId);
 	gl.bufferData(gl.ARRAY_BUFFER, flatten(allWirePoints), gl.STATIC_DRAW);
 
-	gl.uniformMatrix4fv( this.si2.a_Model, false, flatten(model) );
-	gl.uniformMatrix4fv( this.camera.si2.a_View, false, flatten(view) );
-	gl.uniformMatrix4fv( this.camera.si2.a_Projection, false, flatten(projection) );
+	gl.uniformMatrix4fv( this.si2.a_Transformation, false, flatten(this.tp.transform) ); // Model Matrix
+	gl.uniformMatrix4fv( this.camera.si2.a_Transformation, false, flatten(this.camera.tp.transform) ); // View Matrix
+	gl.uniformMatrix4fv( this.camera.si2.a_Projection, false, flatten(this.camera.pp.projection) ); // Projection Matrix
 	//---
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si2.wBufferId);
 	gl.vertexAttribPointer(this.si2.a_Location, 3, gl.FLOAT, false, 0, 0);
@@ -821,7 +836,7 @@ var geomObjects = [];
 var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
-var camera = new Camera();
+var camera = new Camera(100);
 var lights = [new Light(), new Light()];
 lights[0].ui.color = vec3(1.0, 0.1, 0.1);
 lights[0].ui.location = vec3(1.0, 1.0, 1.0);
