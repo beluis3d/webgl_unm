@@ -626,8 +626,19 @@ Cone.prototype.createPoints = function() {
 
 // -- Begin: GUI -- //
 
+var gui = {
+	activeIndexControl: null,
+	effectController: null,
+	datGui: null,
+	f0: null,
+	f1: null,
+	f2: null,
+	f3: null,
+	f4: null
+};
+
 function setupGUI() {
-	var effectController = {
+	gui.effectController = {
 		newAddSphere: addSphere,
 		newAddCylinder: addCylinder,
 		newAddCone: addCone,
@@ -653,171 +664,177 @@ function setupGUI() {
 		newPerspectiveOn: false
 	};
 
-	var gui = new dat.GUI();
-	var f0 = gui.addFolder('Add');
-	function addSphere() {
-		geomObjects.push( new Sphere(geomObjects.length, camera, lights) );
-		updateActiveIndexControl();
-		bUpdate = true;
-	}
-	function addCylinder() {
-		geomObjects.push( new Cylinder(geomObjects.length, camera, lights) );
-		updateActiveIndexControl();
-		bUpdate = true;
-	}
-	function addCone() {
-		geomObjects.push( new Cone(geomObjects.length, camera, lights) );
-		updateActiveIndexControl();
-		bUpdate = true;
-	}
-	function undoAdd() {
-		geomObjects.pop();
-		updateActiveIndexControl();
-		bUpdate = true;
-	}
-	f0.add(effectController, "newAddSphere").name("Add Sphere");
-	f0.add(effectController, "newAddCylinder").name("Add Cylinder");
-	f0.add(effectController, "newAddCone").name("Add Cone");
-	var f1 = gui.addFolder('Current');
-	function updateActiveIndexControl() {
-		f1.remove(activeIndexControl);
-		activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
-		
-		effectController.newActiveIndex = geomObjects.length-1;
-		activeElementOnChange(null);
-	}
-	function activeElementOnChange(value) {
-		if (effectController.newActiveIndex !== activeIndex) {
-			activeIndex = effectController.newActiveIndex;
-
-			effectController.newTranslateX = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[0];
-			effectController.newTranslateY = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[1];
-			effectController.newTranslateZ = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[2];
-			effectController.newRotateX = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[0];
-			effectController.newRotateY = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[1];
-			effectController.newRotateZ = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[2];
-			effectController.newScaleX = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[0];
-			effectController.newScaleY = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[1];
-			effectController.newScaleZ = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[2];
-
-			if (bRenderActiveOnly)
-				bUpdate = true;
-		}
-	}
-	var activeIndexControl = f1.add(effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
-	var f2 = gui.addFolder('Edit');
-	f2.add( effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').listen().onChange(function(value) {
-		if (effectController.newTranslateX !== geomObjects[activeIndex].ui.translate[0]) {
-			geomObjects[activeIndex].translate(0, effectController.newTranslateX);
+	gui.datGui = new dat.GUI();
+	gui.f0 = gui.datGui.addFolder('Add');
+	gui.f0.add(gui.effectController, "newAddSphere").name("Add Sphere");
+	gui.f0.add(gui.effectController, "newAddCylinder").name("Add Cylinder");
+	gui.f0.add(gui.effectController, "newAddCone").name("Add Cone");
+	gui.f1 = gui.datGui.addFolder('Current');
+	gui.activeIndexControl = gui.f1.add(gui.effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
+	gui.f2 = gui.datGui.addFolder('Edit');
+	gui.f2.add( gui.effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').listen().onChange(function(value) {
+		if (gui.effectController.newTranslateX !== geomObjects[activeIndex].ui.translate[0]) {
+			geomObjects[activeIndex].translate(0, gui.effectController.newTranslateX);
 			bUpdate = true;
 		}
 	});
-	f2.add( effectController, 'newTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').listen().onChange(function(value) {
-		if (effectController.newTranslateY !== geomObjects[activeIndex].ui.translate[1]) {
-			geomObjects[activeIndex].translate(1, effectController.newTranslateY);
+	gui.f2.add( gui.effectController, 'newTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').listen().onChange(function(value) {
+		if (gui.effectController.newTranslateY !== geomObjects[activeIndex].ui.translate[1]) {
+			geomObjects[activeIndex].translate(1, gui.effectController.newTranslateY);
 			bUpdate = true;
 		}
 	});
-	f2.add( effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').listen().onChange(function(value) {
-		if (effectController.newTranslateZ !== geomObjects[activeIndex].ui.translate[2]) {
-			geomObjects[activeIndex].translate(2, effectController.newTranslateZ);
+	gui.f2.add( gui.effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').listen().onChange(function(value) {
+		if (gui.effectController.newTranslateZ !== geomObjects[activeIndex].ui.translate[2]) {
+			geomObjects[activeIndex].translate(2, gui.effectController.newTranslateZ);
 			bUpdate = true;
 		}
 	});
-	f2.add( effectController, 'newRotateX', -180.0, 180.0).step(1.0).name('RotateX').listen().onChange(function(value) {
-		if (effectController.newRotateX !== geomObjects[activeIndex].ui.rotate[0]) {
-			geomObjects[activeIndex].rotate(0, effectController.newRotateX);
+	gui.f2.add( gui.effectController, 'newRotateX', -180.0, 180.0).step(1.0).name('RotateX').listen().onChange(function(value) {
+		if (gui.effectController.newRotateX !== geomObjects[activeIndex].ui.rotate[0]) {
+			geomObjects[activeIndex].rotate(0, gui.effectController.newRotateX);
 			bUpdate = true;
 		}
 	});
-	f2.add( effectController, 'newRotateY', -180.0, 180.0).step(1.0).name('RotateY').listen().onChange(function(value) {
-		if (effectController.newRotateY !== geomObjects[activeIndex].ui.rotate[1]) {
-			geomObjects[activeIndex].rotate(1, effectController.newRotateY);
+	gui.f2.add( gui.effectController, 'newRotateY', -180.0, 180.0).step(1.0).name('RotateY').listen().onChange(function(value) {
+		if (gui.effectController.newRotateY !== geomObjects[activeIndex].ui.rotate[1]) {
+			geomObjects[activeIndex].rotate(1, gui.effectController.newRotateY);
 			bUpdate = true;
 		}
 	});
-	f2.add( effectController, 'newRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').listen().onChange(function(value) {
-		if (effectController.newRotateZ !== geomObjects[activeIndex].ui.rotate[2]) {
-			geomObjects[activeIndex].rotate(2, effectController.newRotateZ);
+	gui.f2.add( gui.effectController, 'newRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').listen().onChange(function(value) {
+		if (gui.effectController.newRotateZ !== geomObjects[activeIndex].ui.rotate[2]) {
+			geomObjects[activeIndex].rotate(2, gui.effectController.newRotateZ);
 			bUpdate = true;
 		}
 	});
-	f2.add( effectController, 'newScaleX', 0.0, 2.0).step(0.1).name('ScaleX').listen().onChange(function(value) {
-		if (effectController.newScaleX !== geomObjects[activeIndex].ui.scale[0]) {
-			geomObjects[activeIndex].scale(0, effectController.newScaleX);
+	gui.f2.add( gui.effectController, 'newScaleX', 0.0, 2.0).step(0.1).name('ScaleX').listen().onChange(function(value) {
+		if (gui.effectController.newScaleX !== geomObjects[activeIndex].ui.scale[0]) {
+			geomObjects[activeIndex].scale(0, gui.effectController.newScaleX);
 			bUpdate = true;
 		}
 	});
-	f2.add( effectController, 'newScaleY', 0.0, 2.0).step(0.1).name('ScaleY').listen().onChange(function(value) {
-		if (effectController.newScaleY !== geomObjects[activeIndex].ui.scale[1]) {
-			geomObjects[activeIndex].scale(1, effectController.newScaleY);
+	gui.f2.add( gui.effectController, 'newScaleY', 0.0, 2.0).step(0.1).name('ScaleY').listen().onChange(function(value) {
+		if (gui.effectController.newScaleY !== geomObjects[activeIndex].ui.scale[1]) {
+			geomObjects[activeIndex].scale(1, gui.effectController.newScaleY);
 			bUpdate = true;
 		}
 	});
-	f2.add( effectController, 'newScaleZ', 0.0, 2.0).step(0.1).name('ScaleZ').listen().onChange(function(value) {
-		if (effectController.newScaleZ !== geomObjects[activeIndex].ui.scale[2]) {
-			geomObjects[activeIndex].scale(2, effectController.newScaleZ);
+	gui.f2.add( gui.effectController, 'newScaleZ', 0.0, 2.0).step(0.1).name('ScaleZ').listen().onChange(function(value) {
+		if (gui.effectController.newScaleZ !== geomObjects[activeIndex].ui.scale[2]) {
+			geomObjects[activeIndex].scale(2, gui.effectController.newScaleZ);
 			bUpdate = true;
 		}
 	});
-	var f3 = gui.addFolder('Extras');
-	f3.add(effectController, "newUndo").name("Undo Add");
-	f3.add(effectController, "newOutputToConsole").name("Console Print");
-	f3.add( effectController, "newRenderActiveOnly").name("Active Only").onChange(function(value) {
-		if (effectController.newRenderActiveOnly != bRenderActiveOnly) {
-			bRenderActiveOnly = effectController.newRenderActiveOnly;
+	gui.f3 = gui.datGui.addFolder('Extras');
+	gui.f3.add(gui.effectController, "newUndo").name("Undo Add");
+	gui.f3.add(gui.effectController, "newOutputToConsole").name("Console Print");
+	gui.f3.add( gui.effectController, "newRenderActiveOnly").name("Active Only").onChange(function(value) {
+		if (gui.effectController.newRenderActiveOnly != bRenderActiveOnly) {
+			bRenderActiveOnly = gui.effectController.newRenderActiveOnly;
 			bUpdate = true;
 		}
 	});
-	var f4 = gui.addFolder('Camera');
-	f4.add( effectController, 'newCameraTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').onChange(function(value) {
-		if (effectController.newCameraTranslateX !== camera.ui.translate[0]) {
-			camera.translate(0, effectController.newCameraTranslateX);
+	gui.f4 = gui.datGui.addFolder('Camera');
+	gui.f4.add( gui.effectController, 'newCameraTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').onChange(function(value) {
+		if (gui.effectController.newCameraTranslateX !== camera.ui.translate[0]) {
+			camera.translate(0, gui.effectController.newCameraTranslateX);
 			bUpdate = true;
 		}
 	});
-	f4.add( effectController, 'newCameraTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').onChange(function(value) {
-		if (effectController.newCameraTranslateY !== camera.ui.translate[1]) {
-			camera.translate(1, effectController.newCameraTranslateY);
+	gui.f4.add( gui.effectController, 'newCameraTranslateY', -1.0, 1.0).step(0.1).name('TranslateY').onChange(function(value) {
+		if (gui.effectController.newCameraTranslateY !== camera.ui.translate[1]) {
+			camera.translate(1, gui.effectController.newCameraTranslateY);
 			bUpdate = true;
 		}
 	});
-	f4.add( effectController, 'newCameraTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').onChange(function(value) {
-		if (effectController.newCameraTranslateZ !== camera.ui.translate[2]) {
-			camera.translate(2, effectController.newCameraTranslateZ);
+	gui.f4.add( gui.effectController, 'newCameraTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').onChange(function(value) {
+		if (gui.effectController.newCameraTranslateZ !== camera.ui.translate[2]) {
+			camera.translate(2, gui.effectController.newCameraTranslateZ);
 			bUpdate = true;
 		}
 	});
-	f4.add( effectController, 'newCameraRotateX', -180.0, 180.0).step(1.0).name('RotateX').onChange(function(value) {
-		if (effectController.newCameraRotateX !== camera.ui.rotate[0]) {
-			camera.rotate(0, effectController.newCameraRotateX);
+	gui.f4.add( gui.effectController, 'newCameraRotateX', -180.0, 180.0).step(1.0).name('RotateX').onChange(function(value) {
+		if (gui.effectController.newCameraRotateX !== camera.ui.rotate[0]) {
+			camera.rotate(0, gui.effectController.newCameraRotateX);
 			bUpdate = true;
 		}
 	});
-	f4.add( effectController, 'newCameraRotateY', -180.0, 180.0).step(1.0).name('RotateY').onChange(function(value) {
-		if (effectController.newCameraRotateY !== camera.ui.rotate[1]) {
-			camera.rotate(1, effectController.newCameraRotateY);
+	gui.f4.add( gui.effectController, 'newCameraRotateY', -180.0, 180.0).step(1.0).name('RotateY').onChange(function(value) {
+		if (gui.effectController.newCameraRotateY !== camera.ui.rotate[1]) {
+			camera.rotate(1, gui.effectController.newCameraRotateY);
 			bUpdate = true;
 		}
 	});
-	f4.add( effectController, 'newCameraRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').onChange(function(value) {
-		if (effectController.newCameraRotateZ !== camera.ui.rotate[2]) {
-			camera.rotate(2, effectController.newCameraRotateZ);
+	gui.f4.add( gui.effectController, 'newCameraRotateZ', -180.0, 180.0).step(1.0).name('RotateZ').onChange(function(value) {
+		if (gui.effectController.newCameraRotateZ !== camera.ui.rotate[2]) {
+			camera.rotate(2, gui.effectController.newCameraRotateZ);
 			bUpdate = true;
 		}
 	});
-	f4.add( effectController, "newPerspectiveOn").name("Perspective On").onChange(function(value) {
-		if (effectController.newPerspectiveOn != camera.ui.isPerspective) {
-			camera.ui.isPerspective = effectController.newPerspectiveOn;
+	gui.f4.add( gui.effectController, "newPerspectiveOn").name("Perspective On").onChange(function(value) {
+		if (gui.effectController.newPerspectiveOn != camera.ui.isPerspective) {
+			camera.ui.isPerspective = gui.effectController.newPerspectiveOn;
 			bUpdate = true;
 		}
 	});
 
 
-	f0.open();
-	f1.open();
-	f2.open();
-	f3.open();
+	gui.f0.open();
+	gui.f1.open();
+	gui.f2.open();
+	gui.f3.open();
+}
+
+function addSphere() {
+	geomObjects.push( new Sphere(geomObjects.length, camera, lights) );
+	updateActiveIndexControl();
+	bUpdate = true;
+}
+
+function addCylinder() {
+	geomObjects.push( new Cylinder(geomObjects.length, camera, lights) );
+	updateActiveIndexControl();
+	bUpdate = true;
+}
+
+function addCone() {
+	geomObjects.push( new Cone(geomObjects.length, camera, lights) );
+	updateActiveIndexControl();
+	bUpdate = true;
+}
+
+function undoAdd() {
+	geomObjects.pop();
+	updateActiveIndexControl();
+	bUpdate = true;
+}
+
+function updateActiveIndexControl() {
+	gui.f1.remove(gui.activeIndexControl);
+	gui.activeIndexControl = gui.f1.add(gui.effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
+	
+	gui.effectController.newActiveIndex = geomObjects.length-1;
+	activeElementOnChange(null);
+}
+
+function activeElementOnChange(value) {
+	if (gui.effectController.newActiveIndex !== activeIndex) {
+		activeIndex = gui.effectController.newActiveIndex;
+
+		gui.effectController.newTranslateX = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[0];
+		gui.effectController.newTranslateY = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[1];
+		gui.effectController.newTranslateZ = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.translate[2];
+		gui.effectController.newRotateX = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[0];
+		gui.effectController.newRotateY = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[1];
+		gui.effectController.newRotateZ = (activeIndex == -1) ? (0.0) : geomObjects[activeIndex].ui.rotate[2];
+		gui.effectController.newScaleX = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[0];
+		gui.effectController.newScaleY = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[1];
+		gui.effectController.newScaleZ = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[2];
+
+		if (bRenderActiveOnly)
+			bUpdate = true;
+	}
 }
 
 function outputToConsole() {
