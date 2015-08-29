@@ -7,7 +7,7 @@ var Object3D = function(id, className) {
 	this.className = (!!className) ? className : "Object3D";
 
 	this.si1 = { // shader inputs for program1
-		a_Transformation: undefined,    // shader field for model/view transformation
+		a_Transformation: undefined,    // shader field for model/view transformation or light location
 	};
 
 	this.si2 = { //shader inputs for program2
@@ -36,24 +36,28 @@ Object3D.prototype.toString = function() {
 
 // --- Begin: Light Class --- //
 
-var Light = function() {
+var Light = function(id, className) {
+	Object3D.call(this, id, (!!className) ? className : "Light");
 
-	this.si1 = {
-		u_LightColor: undefined,
-		u_LightLocation: undefined
-	};
+	//this.si1 = {
+		this.si1.u_LightColor = undefined;
+		//u_LightLocation: undefined
+	//};
 
 	this.lp = { //lightProperties
 		color: vec3()
 	};
 
-	this.ui = {
-		color: vec3(),
-		location: vec3(),
-		bOn: true			// is the light on?
-	};
+	//this.ui = {
+		this.ui.color = vec3();
+		//location: vec3(),
+		this.ui.bOn = true;			// is the light on?
+	//};
 
 }
+
+Light.prototype = Object.create(Object3D.prototype);
+Light.prototype.constructor = Light;
 
 Light.prototype.updateColorVector = function() {
 	this.lp.color = scale((this.ui.bOn ? 1.0 : 0.0), this.ui.color);
@@ -220,7 +224,7 @@ Mesh.prototype.setupData = function() {
 
 	for (var i = 0; i < this.lights.length; i++) {
 		this.lights[i].si1.u_LightColor = gl.getUniformLocation(gl.program, "u_LightColor");
-		this.lights[i].si1.u_LightLocation = gl.getUniformLocation(gl.program, "u_LightLocation");
+		this.lights[i].si1.a_Transformation = gl.getUniformLocation(gl.program, "u_LightLocation");
 	}
 }
 
@@ -284,10 +288,10 @@ Mesh.prototype.render = function() {
 	var lightLocations = [];
 	for (var i = 0; i < this.lights.length; i++) {
 		lightColors.push(this.lights[i].lp.color);
-		lightLocations.push(this.lights[i].ui.location);
+		lightLocations.push(this.lights[i].ui.translate); // taken straight out of ui, since only need translate
 	}
 	var u_LightColor = this.lights[0].si1.u_LightColor; 
-	var u_LightLocation = this.lights[0].si1.u_LightLocation;
+	var u_LightLocation = this.lights[0].si1.a_Transformation;
 	gl.uniform3fv(u_LightColor, flatten(lightColors));
 	gl.uniform3fv(u_LightLocation, flatten(lightLocations));
 	//---
@@ -814,12 +818,12 @@ var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
 var camera = new Camera(0);
-var lights = [new Light(), new Light()];
+var lights = [new Light(1), new Light(2)];
 lights[0].ui.color = vec3(1.0, 0.1, 0.1);
-lights[0].ui.location = vec3(1.0, 1.0, 1.0);
+lights[0].ui.translate = vec3(1.0, 1.0, 1.0);
 lights[0].ui.bOn = true;
 lights[1].ui.color = vec3(0.1, 1.0, 0.1);
-lights[1].ui.location = vec3(-1.0, -1.0, -1.0);
+lights[1].ui.translate = vec3(-1.0, -1.0, -1.0);
 lights[1].ui.bOn = true;
 
 
