@@ -763,7 +763,7 @@ function setupGUI() {
 	lights[0].ui.translate = vec3(1.0, 1.0, 1.0);
 	lights[0].ui.bOn = true;
 	lights[1].ui.color = vec3(0.1, 1.0, 0.1);
-	lights[1].ui.translate = vec3(-1.0, -1.0, -1.0);
+	lights[1].ui.translate = vec3(-1.0, 1.0, 1.0);
 	lights[1].ui.bOn = true;
 }
 
@@ -867,6 +867,26 @@ function setupData() {
 	gl.enable(gl.DEPTH_TEST);
 }
 
+var oldLightTime = (new Date()).getTime();
+var lightRate = [0.3, 0.3];
+function updateLightsAnimation() {
+	var newLightTime = (new Date()).getTime();
+	var timePassed = (newLightTime - oldLightTime)/1000.0;
+	oldLightTime = newLightTime;
+	for (var i = 0; i < lights.length; i++) {
+		var light = lights[i];
+		var oldLightHeight = light.ui.translate[1];
+		var newLightHeight = oldLightHeight + lightRate[i]*timePassed;
+		if (newLightHeight < -1.0 || newLightHeight > 1.0) {
+			lightRate[i] *= -1.0;
+			newLightHeight = oldLightHeight + lightRate[i]*timePassed;
+		}
+
+		light.ui.translate[1] = newLightHeight;
+		bUpdate = true;
+	}
+}
+
 function updateAndRender() {
 	if (!bUpdate) {
 		requestAnimFrame(updateAndRender);
@@ -886,6 +906,9 @@ function updateAndRender() {
 		geomObjects[activeIndex].update();
 		geomObjects[activeIndex].render();
 	}
+
+	updateLightsAnimation();
+
 	requestAnimFrame(updateAndRender);
 }
 
