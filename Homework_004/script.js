@@ -59,6 +59,11 @@ var Light = function(id, className) {
 Light.prototype = Object.create(Object3D.prototype);
 Light.prototype.constructor = Light;
 
+Light.prototype.translate = function(axis, value) { 
+	this.ui.translate[axis] = value;
+	// no need to change/use the transformation matrix
+}
+
 Light.prototype.updateColorVector = function() {
 	this.lp.color = scale((this.ui.bOn ? 1.0 : 0.0), this.ui.color);
 }
@@ -745,6 +750,15 @@ function setupGUI() {
 	gui.f2.open();
 	gui.f3.open();
 	addCamera();
+
+	addLight();
+	addLight();
+	lights[0].ui.color = vec3(1.0, 0.1, 0.1);
+	lights[0].ui.translate = vec3(1.0, 1.0, 1.0);
+	lights[0].ui.bOn = true;
+	lights[1].ui.color = vec3(0.1, 1.0, 0.1);
+	lights[1].ui.translate = vec3(-1.0, -1.0, -1.0);
+	lights[1].ui.bOn = true;
 }
 
 function addSphere() {
@@ -767,6 +781,14 @@ function addCone() {
 
 function addCamera() {
 	geomObjects.push( camera );
+	updateActiveIndexControl();
+	bUpdate = true;
+}
+
+function addLight() {
+	var newLight = new Light(geomObjects.length);
+	lights.push( newLight );
+	geomObjects.push( newLight );
 	updateActiveIndexControl();
 	bUpdate = true;
 }
@@ -818,15 +840,7 @@ var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
 var camera = new Camera(0);
-var lights = [new Light(1), new Light(2)];
-lights[0].ui.color = vec3(1.0, 0.1, 0.1);
-lights[0].ui.translate = vec3(1.0, 1.0, 1.0);
-lights[0].ui.bOn = true;
-lights[1].ui.color = vec3(0.1, 1.0, 0.1);
-lights[1].ui.translate = vec3(-1.0, -1.0, -1.0);
-lights[1].ui.bOn = true;
-
-
+var lights = [];
 
 window.onload = function init() {
 	var canvas = document.getElementById("gl-canvas");
