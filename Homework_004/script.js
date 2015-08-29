@@ -660,6 +660,7 @@ function setupGUI() {
 		newScaleX: 1.0,
 		newScaleY: 1.0,
 		newScaleZ: 1.0,
+		newLightOn: true,
 		newUndo: undoAdd,
 		newOutputToConsole: outputToConsole,
 		newRenderActiveOnly: bRenderActiveOnly,
@@ -728,6 +729,12 @@ function setupGUI() {
 			bUpdate = true;
 		}
 	});
+	gui.f2.add( gui.effectController, 'newLightOn' ).name("Light On").listen().onChange(function(value) {
+		if ( gui.effectController.newLightOn != geomObjects[activeIndex].ui.bOn ) {
+			geomObjects[activeIndex].ui.bOn = gui.effectController.newLightOn;
+			bUpdate = true;
+		}
+	});
 	gui.f3 = gui.datGui.addFolder('Extras');
 	gui.f3.add(gui.effectController, "newUndo").name("Undo Add");
 	gui.f3.add(gui.effectController, "newOutputToConsole").name("Console Print");
@@ -743,7 +750,6 @@ function setupGUI() {
 			bUpdate = true;
 		}
 	});
-
 
 	gui.f0.open();
 	gui.f1.open();
@@ -820,6 +826,8 @@ function activeElementOnChange(value) {
 		gui.effectController.newScaleX = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[0];
 		gui.effectController.newScaleY = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[1];
 		gui.effectController.newScaleZ = (activeIndex == -1) ? (1.0) : geomObjects[activeIndex].ui.scale[2];
+		gui.effectController.newLightOn = (activeIndex == -1 
+			|| !(geomObjects[activeIndex] instanceof Light) ) ? false : geomObjects[activeIndex].ui.bOn;
 
 		if (bRenderActiveOnly)
 			bUpdate = true;
