@@ -76,6 +76,7 @@ var Camera = function(id, className) {
 	//	transform: mat4(),		// the collection of view transformations (translate, & rotate)
 	//	translate: mat4(),
 	//	rotate: mat4()
+		this.tp.projection = mat4();
 	//};
 
 	//this.ui = {
@@ -91,10 +92,6 @@ var Camera = function(id, className) {
 		this.ui.far = 1.0;
 		this.ui.isPerspective = false;
 	//};
-
-	this.pp = { // projectionProperties
-		projection: mat4()
-	};
 
 }
 
@@ -119,7 +116,7 @@ Camera.prototype.updateViewMatrix = function() {
 }
 
 Camera.prototype.updateProjectionMatrix = function() {
-	this.pp.projection = (this.ui.isPerspective) ? 
+	this.tp.projection = (this.ui.isPerspective) ? 
 		perspective(this.ui.fovy, this.ui.aspect, this.ui.near, this.ui.far) : 
 		ortho(this.ui.left, this.ui.right, this.ui.bottom, this.ui.top, this.ui.near, this.ui.far) ;
 }
@@ -276,7 +273,7 @@ Mesh.prototype.render = function() {
 	
 	gl.uniformMatrix4fv( this.si1.a_Transformation, false, flatten(this.tp.transform) ); // Model Matrix
 	gl.uniformMatrix4fv( this.camera.si1.a_Transformation, false, flatten(this.camera.tp.transform) ); // View Matrix
-	gl.uniformMatrix4fv( this.camera.si1.a_Projection, false, flatten(this.camera.pp.projection) ); // Projection Matrix
+	gl.uniformMatrix4fv( this.camera.si1.a_Projection, false, flatten(this.camera.tp.projection) ); // Projection Matrix
 	gl.uniformMatrix4fv( this.si1.a_NormalMatrix, false, flatten(this.tp.normal) ); // Normal Matrix
 	
 	var lightColors = [];
@@ -307,7 +304,7 @@ Mesh.prototype.render = function() {
 
 	gl.uniformMatrix4fv( this.si2.a_Transformation, false, flatten(this.tp.transform) ); // Model Matrix
 	gl.uniformMatrix4fv( this.camera.si2.a_Transformation, false, flatten(this.camera.tp.transform) ); // View Matrix
-	gl.uniformMatrix4fv( this.camera.si2.a_Projection, false, flatten(this.camera.pp.projection) ); // Projection Matrix
+	gl.uniformMatrix4fv( this.camera.si2.a_Projection, false, flatten(this.camera.tp.projection) ); // Projection Matrix
 	//---
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si2.wBufferId);
 	gl.vertexAttribPointer(this.si2.a_Location, 3, gl.FLOAT, false, 0, 0);
