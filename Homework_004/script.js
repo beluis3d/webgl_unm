@@ -158,7 +158,7 @@ var Mesh = function(id, className, camera, lights) {
 	this.botFaceNormals = [];
 	this.topFaces = [];
 	this.topFaceNormals = [];
-	this.color = vec4();
+	this.materialColor = vec3(Math.random(), Math.random(), Math.random());
 
 	this.wire = {
 		curves: [],
@@ -174,6 +174,7 @@ var Mesh = function(id, className, camera, lights) {
 		this.si1.a_Location = undefined; // shader field for location of vertex	
 		this.si1.a_Normal = undefined;   // shader field for normal of the vertex
 		this.si1.a_NormalMatrix = undefined; // shader field for normal transformation
+		this.si1.u_MaterialColor = undefined; // shader field for material color
 	//};
 	
 	//this.si2 = { // shader inputs for program2
@@ -227,6 +228,8 @@ Mesh.prototype.setupData = function() {
 	this.camera.si2.a_Projection = gl.getUniformLocation(gl.program2, "a_Projection");
 
 	this.si1.a_NormalMatrix = gl.getUniformLocation(gl.program, "a_NormalMatrix");
+
+	this.si1.u_MaterialColor = gl.getUniformLocation(gl.program, "u_MaterialColor");
 
 	for (var i = 0; i < this.lights.length; i++) {
 		this.lights[i].si1.u_LightColor = gl.getUniformLocation(gl.program, "u_LightColor");
@@ -290,6 +293,8 @@ Mesh.prototype.render = function() {
 	gl.uniformMatrix4fv( this.camera.si1.a_Transformation, false, flatten(this.camera.tp.transform) ); // View Matrix
 	gl.uniformMatrix4fv( this.camera.si1.a_Projection, false, flatten(this.camera.tp.projection) ); // Projection Matrix
 	gl.uniformMatrix4fv( this.si1.a_NormalMatrix, false, flatten(this.tp.normal) ); // Normal Matrix
+
+	gl.uniform4f(this.si1.u_MaterialColor, this.materialColor[0], this.materialColor[1], this.materialColor[2], 1.0);
 	
 	var lightColors = [];
 	var lightLocations = [];
@@ -789,10 +794,10 @@ function setupGUI() {
 
 	addLight();
 	addLight();
-	lights[0].ui.color = vec3(1.0, 0.1, 0.1);
+	lights[0].ui.color = vec3(1.0, 1.0, 1.0);
 	lights[0].ui.translate = vec3(0.7, 1.0, 1.0);
 	lights[0].ui.bOn = true;
-	lights[1].ui.color = vec3(0.1, 1.0, 0.1);
+	lights[1].ui.color = vec3(1.0, 1.0, 1.0);
 	lights[1].ui.translate = vec3(-0.7, 1.0, 1.0);
 	lights[1].ui.bOn = true;
 }
