@@ -41,6 +41,7 @@ var Light = function(id, className) {
 
 	//this.si1 = {
 		this.si1.u_LightColor = undefined;
+		this.si1.u_AttenuationOn = undefined;
 		//u_LightLocation: undefined
 	//};
 
@@ -229,6 +230,7 @@ Mesh.prototype.setupData = function() {
 
 	for (var i = 0; i < this.lights.length; i++) {
 		this.lights[i].si1.u_LightColor = gl.getUniformLocation(gl.program, "u_LightColor");
+		this.lights[i].si1.u_AttenuationOn = gl.getUniformLocation(gl.program, "u_AttenuationOn");
 		this.lights[i].si1.a_Transformation = gl.getUniformLocation(gl.program, "u_LightLocation");
 	}
 }
@@ -296,8 +298,10 @@ Mesh.prototype.render = function() {
 		lightLocations.push(this.lights[i].ui.translate); // taken straight out of ui, since only need translate
 	}
 	var u_LightColor = this.lights[0].si1.u_LightColor; 
+	var u_AttenuationOn = this.lights[0].si1.u_AttenuationOn;
 	var u_LightLocation = this.lights[0].si1.a_Transformation;
 	gl.uniform3fv(u_LightColor, flatten(lightColors));
+	gl.uniform1f(u_AttenuationOn, bAttenuationOn ? 1.0 : 0.0);
 	gl.uniform3fv(u_LightLocation, flatten(lightLocations));
 	//---
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.vBufferId);
@@ -667,7 +671,8 @@ function setupGUI() {
 		newRenderActiveOnly: bRenderActiveOnly,
 		newPerspectiveOn: false,
 		newLightAnimationOn: true,
-		newWireframesOn: false
+		newWireframesOn: false,
+		newAttenuationOn: true
 	};
 
 	gui.datGui = new dat.GUI();
@@ -764,6 +769,12 @@ function setupGUI() {
 	gui.f3.add( gui.effectController, "newWireframesOn" ).name("Wireframes On").onChange(function(value){
 		if (gui.effectController.newWireframesOn != bWireframesOn) {
 			bWireframesOn = gui.effectController.newWireframesOn;
+			bUpdate = true;
+		}
+	});
+	gui.f3.add( gui.effectController, "newAttenuationOn" ).name("Attenuation On").onChange(function(value) {
+		if (gui.effectController.newAttenuationOn != bAttenuationOn) {
+			bAttenuationOn = gui.effectController.newAttenuationOn;
 			bUpdate = true;
 		}
 	});
@@ -875,6 +886,7 @@ var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
 var bLightAnimationOn = true;
+var bAttenuationOn = true;
 var bWireframesOn = false;
 var camera = new Camera(0);
 var lights = [];

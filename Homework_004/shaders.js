@@ -10,6 +10,7 @@ var VSHADER_SOURCE =
     "//uniform vec4 u_MaterialColor;\n" +
     "uniform vec3 u_LightColor[2];\n" +
     "uniform vec3 u_LightLocation[2];\n" +
+    "uniform float u_AttenuationOn;\n" + 
     "varying vec4 v_Position;\n" +
     "varying vec4 v_Color;\n" +
     "void main() {\n" +
@@ -22,7 +23,7 @@ var VSHADER_SOURCE =
     "   for (int i = 0; i < 2; i++) {\n" +
     "      vec3 lightDirection = u_LightLocation[i] - worldLoc;\n" + 
     "      float lightDistance = length(lightDirection);\n" + 
-    "      float attenuation = 1.0/(pow(lightDistance/2.0+1.0,2.0));\n" +
+    "      float attenuation = (u_AttenuationOn == 1.0) ? 1.0/(pow(lightDistance/5.0+1.0,2.0)) : 1.0;\n" +
     "      lightDirection = normalize(lightDirection);\n" +
     "      float nDotL = max(dot(normal, lightDirection), 0.0);\n" + 
     "      vec3 colorProduct = u_MaterialColor.xyz * u_LightColor[i];\n" +
