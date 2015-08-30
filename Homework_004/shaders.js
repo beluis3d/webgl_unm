@@ -20,10 +20,13 @@ var VSHADER_SOURCE =
     "   vec3 normal = normalize(vec3(a_NormalMatrix * a_Normal));\n" + 
     "   vec3 worldLoc = (a_Model * a_Location).xyz;\n" + 
     "   for (int i = 0; i < 2; i++) {\n" +
-    "      vec3 lightDirection = normalize( u_LightLocation[i] - worldLoc );\n" + 
+    "      vec3 lightDirection = u_LightLocation[i] - worldLoc;\n" + 
+    "      float lightDistance = length(lightDirection);\n" + 
+    "      float attenuation = 1.0/(pow(lightDistance/2.0+1.0,2.0));\n" +
+    "      lightDirection = normalize(lightDirection);\n" +
     "      float nDotL = max(dot(normal, lightDirection), 0.0);\n" + 
     "      vec3 colorProduct = u_MaterialColor.xyz * u_LightColor[i];\n" +
-    "      colorSum += nDotL * colorProduct;\n" +
+    "      colorSum += nDotL * colorProduct * attenuation;\n" +
     "   }\n" +
     "   vec3 ambientColor = vec3(0.2, 0.2, 0.2);\n" + 
     "   colorSum += ambientColor;\n" + 
