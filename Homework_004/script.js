@@ -676,7 +676,8 @@ function setupGUI() {
 	gui.f0.add(gui.effectController, "newAddCylinder").name("Add Cylinder");
 	gui.f0.add(gui.effectController, "newAddCone").name("Add Cone");
 	gui.f1 = gui.datGui.addFolder('Current');
-	gui.activeIndexControl = gui.f1.add(gui.effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
+	var activeIndexList = generateActiveIndexList();
+	gui.activeIndexControl = gui.f1.add(gui.effectController, 'newActiveIndex', activeIndexList).name("Active Element").listen().onChange(activeElementOnChange);
 	gui.f2 = gui.datGui.addFolder('Edit');
 	gui.f2.add( gui.effectController, 'newTranslateX', -1.0, 1.0).step(0.1).name('TranslateX').listen().onChange(function(value) {
 		if (gui.effectController.newTranslateX !== geomObjects[activeIndex].ui.translate[0]) {
@@ -816,6 +817,7 @@ function addLight() {
 }
 
 function undoAdd() {
+	if (geomObjects.length <= 3) {return;}
 	geomObjects.pop();
 	updateActiveIndexControl();
 	bUpdate = true;
@@ -823,10 +825,19 @@ function undoAdd() {
 
 function updateActiveIndexControl() {
 	gui.f1.remove(gui.activeIndexControl);
-	gui.activeIndexControl = gui.f1.add(gui.effectController, 'newActiveIndex', geomObjects).name("Active Element").listen().onChange(activeElementOnChange);
+	var activeIndexList = generateActiveIndexList();
+	gui.activeIndexControl = gui.f1.add(gui.effectController, 'newActiveIndex', activeIndexList).name("Active Element").listen().onChange(activeElementOnChange);
 	
 	gui.effectController.newActiveIndex = geomObjects.length-1;
 	activeElementOnChange(null);
+}
+
+function generateActiveIndexList() {
+	var retBlock = {};
+	for (var i = 0; i < geomObjects.length; i++) {
+		retBlock["" + geomObjects[i].className + "_" + geomObjects[i].id] = geomObjects[i].id;
+	}
+	return retBlock;
 }
 
 function activeElementOnChange(value) {
