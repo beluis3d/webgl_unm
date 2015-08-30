@@ -664,7 +664,8 @@ function setupGUI() {
 		newUndo: undoAdd,
 		newOutputToConsole: outputToConsole,
 		newRenderActiveOnly: bRenderActiveOnly,
-		newPerspectiveOn: false
+		newPerspectiveOn: false,
+		newLightAnimationOn: true
 	};
 
 	gui.datGui = new dat.GUI();
@@ -747,6 +748,13 @@ function setupGUI() {
 	gui.f3.add( gui.effectController, "newPerspectiveOn").name("Perspective On").onChange(function(value) {
 		if (gui.effectController.newPerspectiveOn != camera.ui.isPerspective) {
 			camera.ui.isPerspective = gui.effectController.newPerspectiveOn;
+			bUpdate = true;
+		}
+	});
+	gui.f3.add( gui.effectController, "newLightAnimationOn" ).name("Animation On").onChange(function(value) {
+		if (gui.effectController.newLightAnimationOn != bLightAnimationOn) {
+			oldLightTime = (new Date()).getTime();
+			bLightAnimationOn = gui.effectController.newLightAnimationOn;
 			bUpdate = true;
 		}
 	});
@@ -847,6 +855,7 @@ var geomObjects = [];
 var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
+var bLightAnimationOn = true;
 var camera = new Camera(0);
 var lights = [];
 
@@ -907,7 +916,8 @@ function updateAndRender() {
 		geomObjects[activeIndex].render();
 	}
 
-	updateLightsAnimation();
+	if (bLightAnimationOn)
+		updateLightsAnimation();
 
 	requestAnimFrame(updateAndRender);
 }
