@@ -306,6 +306,8 @@ Mesh.prototype.render = function() {
 	//---
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.vBufferId);
 	gl.vertexAttribPointer(this.si1.a_Location, 3, gl.FLOAT, false, 0, 0);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.nBufferId);
+	gl.vertexAttribPointer(this.si1.a_Normal, 3, gl.FLOAT, false, 0, 0);
 	for (var i = 0; i < this.solid.curves.length; i++) {
 		gl.drawArrays(gl.TRIANGLE_STRIP, this.solid.curves[i].start, this.solid.curves[i].size);	
 	}
