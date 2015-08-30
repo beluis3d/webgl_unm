@@ -33,7 +33,8 @@ var VSHADER_SOURCE =
     "      \n" +
     "      vec3 halfwayVector = normalize(lightDirection+eyeDirection);\n" + 
     "      float nDotH = max(dot(normal, halfwayVector), 0.0);\n" + 
-    "      float Ks = pow(nDotH, 100.0);\n" + 
+    "      float highlightValue = (i==0) ? 10000.0: 1.0;\n" +
+    "      float Ks = pow(nDotH, highlightValue);\n" + 
     "      vec3 specularProduct = u_MaterialColor.rgb * u_LightColor[i];\n" + 
     "      colorSum += Ks * specularProduct;\n" + 
     "   }\n" +
