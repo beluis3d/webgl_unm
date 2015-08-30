@@ -25,6 +25,8 @@ var VSHADER_SOURCE =
     "      vec3 colorProduct = u_MaterialColor.xyz * u_LightColor[i];\n" +
     "      colorSum += nDotL * colorProduct;\n" +
     "   }\n" +
+    "   vec3 ambientColor = vec3(0.2, 0.2, 0.2);\n" + 
+    "   colorSum += ambientColor;\n" + 
     "   v_Color = vec4(colorSum, u_MaterialColor.a);\n" +
     "   \n" +
     "	gl_PointSize = 15.0;\n" +
