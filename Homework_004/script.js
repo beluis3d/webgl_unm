@@ -309,6 +309,7 @@ Mesh.prototype.render = function() {
 	gl.drawArrays(gl.TRIANGLE_FAN, this.solid.points.length+this.solid.botPoints.length, this.solid.topPoints.length);
 
 
+	if (!bWireframesOn) {return;}
 	gl.useProgram(gl.program2);
 	//---
 	var allWirePoints = this.wire.points.concat(this.wire.botPoints).concat(this.wire.topPoints);
@@ -665,7 +666,8 @@ function setupGUI() {
 		newOutputToConsole: outputToConsole,
 		newRenderActiveOnly: bRenderActiveOnly,
 		newPerspectiveOn: false,
-		newLightAnimationOn: true
+		newLightAnimationOn: true,
+		newWireframesOn: false
 	};
 
 	gui.datGui = new dat.GUI();
@@ -755,6 +757,12 @@ function setupGUI() {
 		if (gui.effectController.newLightAnimationOn != bLightAnimationOn) {
 			oldLightTime = (new Date()).getTime();
 			bLightAnimationOn = gui.effectController.newLightAnimationOn;
+			bUpdate = true;
+		}
+	});
+	gui.f3.add( gui.effectController, "newWireframesOn" ).name("Wireframes On").onChange(function(value){
+		if (gui.effectController.newWireframesOn != bWireframesOn) {
+			bWireframesOn = gui.effectController.newWireframesOn;
 			bUpdate = true;
 		}
 	});
@@ -856,6 +864,7 @@ var bUpdate = true;
 var activeIndex = -1;
 var bRenderActiveOnly = false;
 var bLightAnimationOn = true;
+var bWireframesOn = false;
 var camera = new Camera(0);
 var lights = [];
 
