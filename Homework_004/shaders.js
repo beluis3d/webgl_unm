@@ -15,6 +15,9 @@ var VSHADER_SOURCE =
     "varying vec4 v_Color;\n" +
     "void main() {\n" +
     "	gl_Position = a_Projection * a_View * a_Model * a_Location;\n" +
+    "   vec4 eyeLocation = (a_View * a_Model * a_Location);\n" +
+    "   eyeLocation.z *= -1.0;// switch to right hand system\n" + 
+    "   vec3 eyeDirection = normalize((vec4(0.0, 0.0, 0.0, 0.0) - eyeLocation).xyz);\n" +
     "   \n" +
     "   vec3 colorSum = vec3(0.0, 0.0, 0.0);\n" +
     "   vec3 normal = normalize(vec3(a_NormalMatrix * a_Normal));\n" + 
@@ -25,8 +28,14 @@ var VSHADER_SOURCE =
     "      float attenuation = (u_AttenuationOn == 1.0) ? 1.0/(pow(lightDistance/5.0+1.0,2.0)) : 1.0;\n" +
     "      lightDirection = normalize(lightDirection);\n" +
     "      float nDotL = max(dot(normal, lightDirection), 0.0);\n" + 
-    "      vec3 colorProduct = u_MaterialColor.rgb * u_LightColor[i];\n" +
-    "      colorSum += nDotL * colorProduct * attenuation;\n" +
+    "      vec3 diffuseProduct = u_MaterialColor.rgb * u_LightColor[i];\n" +
+    "      colorSum += nDotL * diffuseProduct * attenuation;\n" +
+    "      \n" +
+    "      vec3 halfwayVector = normalize(lightDirection+eyeDirection);\n" + 
+    "      float nDotH = max(dot(normal, halfwayVector), 0.0);\n" + 
+    "      float Ks = pow(nDotH, 100.0);\n" + 
+    "      vec3 specularProduct = u_MaterialColor.rgb * u_LightColor[i];\n" + 
+    "      colorSum += Ks * specularProduct;\n" + 
     "   }\n" +
     "   vec3 ambientColor = vec3(0.2, 0.2, 0.2);\n" + 
     "   colorSum += ambientColor;\n" + 

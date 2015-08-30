@@ -798,7 +798,7 @@ function setupGUI() {
 	lights[0].ui.translate = vec3(0.7, 1.0, 1.0);
 	lights[0].ui.bOn = true;
 	lights[1].ui.color = vec3(1.0, 1.0, 1.0);
-	lights[1].ui.translate = vec3(-0.7, 1.0, 1.0);
+	lights[1].ui.translate = vec3(-0.7, -1.0, 1.0);
 	lights[1].ui.bOn = true;
 }
 
