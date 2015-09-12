@@ -194,7 +194,7 @@ var Mesh = function(id, className, camera, lights) {
 
 	this.setupData();
 	this.createPoints(); 
-	this.createNormals();
+	//this.createNormals();
 }
 
 Mesh.prototype = Object.create(Object3D.prototype);
@@ -455,23 +455,34 @@ Sphere.prototype.createPoints = function() {
 		for (var i = 0.0; i <= 360.0; i+=di) {
 			var p1 = polarToCartesian(radius,i,k);
 			var p2 = polarToCartesian(radius,i,k-dk);
+			var n1 = polarToCartesianNormal(i,k);
+			var n2 = polarToCartesianNormal(i,k-dk);
 			
 			kCurve.size+=2;
 			this.solid.points.push( p1, p2 );
+			this.faceNormals.push( n1, n2 );
 		}
 		this.solid.curves.push( kCurve );
 	}
 	var botPoint = polarToCartesian(radius,0.0,180.0);
 	this.solid.botPoints = [botPoint];
+	var botNormal = polarToCartesianNormal(0.0,180.0);
+	this.botFaceNormals = [botNormal];
 	for(var i = 0; i <= 360.0; i+=di) {
 		var p1 = polarToCartesian(radius,i,180.0-dk);
 		this.solid.botPoints.push(p1);
+		var n1 = polarToCartesianNormal(i,180.0-dk);
+		this.botFaceNormals.push(n1);
 	}
 	var topPoint = polarToCartesian(radius,0.0,0.0);
 	this.solid.topPoints = [topPoint];
+	var topNormal = polarToCartesianNormal(0.0,0.0);
+	this.topFaceNormals = [topNormal];
 	for(var i = 0; i <= 360.0; i+=di) {
 		var p1 = polarToCartesian(radius,i,0.0+dk);
 		this.solid.topPoints.push(p1);
+		var n1 = polarToCartesianNormal(i,0.0+dk);
+		this.topFaceNormals.push(n1);
 	}
 
 
@@ -513,6 +524,7 @@ Cylinder.prototype = Object.create(Mesh.prototype);
 Cylinder.prototype.constructor = Cylinder;
 
 Cylinder.prototype.createPoints = function() {
+	// TODO: create normals here
 	var steps = 12.0;
 	var height = 1.0;
 	var di = 360.0/steps;
@@ -583,6 +595,7 @@ Cone.prototype = Object.create(Mesh.prototype);
 Cone.prototype.constructor = Cone;
 
 Cone.prototype.createPoints = function() {
+	//TODO: create normals here
 	var steps = 12.0;
 	var height = 2.0;
 	var di = 360.0/steps;
@@ -966,6 +979,13 @@ function polarToCartesian(radius, theta, phi) {
 	var x = radius*Math.cos(radians(theta))*Math.sin(radians(phi));
 	var y = radius*Math.sin(radians(theta))*Math.sin(radians(phi));
 	var z = radius*Math.cos(radians(phi));
+	return vec3(x,y,z);
+}
+
+function polarToCartesianNormal(theta, phi) {
+	var x = Math.cos(radians(theta))*Math.sin(radians(phi));
+	var y = Math.sin(radians(theta))*Math.sin(radians(phi));
+	var z = Math.cos(radians(phi));
 	return vec3(x,y,z);
 }
 
