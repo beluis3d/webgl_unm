@@ -444,7 +444,7 @@ Sphere.prototype = Object.create(Mesh.prototype);
 Sphere.prototype.constructor = Sphere;
 
 Sphere.prototype.createPoints = function() {
-	var steps = 12.0;
+	var steps = 48.0;
 	var di = 360.0/steps;
 	var dk = 180.0/steps;
 	var radius = 1.0;
