@@ -100,7 +100,7 @@ var Camera = function(id, className) {
 		this.ui.right = 1.0;
 		this.ui.bottom = -1.0;
 		this.ui.top = 1.0;
-		this.ui.fovy = 90.0; //degrees
+		this.ui.fovy = 45.0; //degrees
 		this.ui.aspect = 1.0; // width/height
 		this.ui.near = -1.0;
 		this.ui.far = 1.0;
@@ -130,8 +130,9 @@ Camera.prototype.updateViewMatrix = function() {
 }
 
 Camera.prototype.updateProjectionMatrix = function() {
+	var canvas = document.getElementById("gl-canvas");
 	this.tp.projection = (this.ui.isPerspective) ? 
-		perspective(this.ui.fovy, this.ui.aspect, this.ui.near, this.ui.far) : 
+		perspective(this.ui.fovy, canvas.width / canvas.height, this.ui.near, this.ui.far) : 
 		ortho(this.ui.left, this.ui.right, this.ui.bottom, this.ui.top, this.ui.near, this.ui.far) ;
 }
 
@@ -703,7 +704,7 @@ function setupGUI() {
 			bUpdate = true;
 		}
 	});
-	gui.f2.add( gui.effectController, 'newTranslateZ', -1.0, 1.0).step(0.1).name('TranslateZ').listen().onChange(function(value) {
+	gui.f2.add( gui.effectController, 'newTranslateZ', -10.0, 10.0).step(0.1).name('TranslateZ').listen().onChange(function(value) {
 		if (gui.effectController.newTranslateZ !== geomObjects[activeIndex].ui.translate[2]) {
 			geomObjects[activeIndex].translate(2, gui.effectController.newTranslateZ);
 			bUpdate = true;
