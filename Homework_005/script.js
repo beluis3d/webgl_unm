@@ -686,8 +686,8 @@ function setupGUI() {
 	gui.datGui = new dat.GUI();
 	gui.f0 = gui.datGui.addFolder('Add');
 	gui.f0.add(gui.effectController, "newAddSphere").name("Add Sphere");
-	gui.f0.add(gui.effectController, "newAddCylinder").name("Add Cylinder");
-	gui.f0.add(gui.effectController, "newAddCone").name("Add Cone");
+	//gui.f0.add(gui.effectController, "newAddCylinder").name("Add Cylinder");
+	//gui.f0.add(gui.effectController, "newAddCone").name("Add Cone");
 	gui.f1 = gui.datGui.addFolder('Current');
 	var activeIndexList = generateActiveIndexList();
 	gui.activeIndexControl = gui.f1.add(gui.effectController, 'newActiveIndex', activeIndexList).name("Active Element").listen().onChange(activeElementOnChange);
