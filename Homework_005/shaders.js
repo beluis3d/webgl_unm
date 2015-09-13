@@ -72,7 +72,7 @@ var FSHADER_SOURCE =
     "   vec3 ambientColor = vec3(0.2, 0.2, 0.2);\n" + 
     "   colorSum += ambientColor;\n" + 
     "	gl_FragColor = vec4(colorSum, u_MaterialColor.a);\n" +
-    "   gl_FragColor = texture2D(u_Sampler, v_Texel);\n" + 
+    "   gl_FragColor *= texture2D(u_Sampler, v_Texel);\n" + 
     "}\n" +
     "";
 
