@@ -250,7 +250,7 @@ Mesh.prototype.setupData = function() {
 		this.lights[i].si1.a_Transformation = gl.getUniformLocation(gl.program, "u_LightLocation");
 	}
 
-	this.initTexture("Homework_005/moon.gif");//this.initTextureCheckerboard();//
+	this.initTextureCheckerboard();//this.initTexture("Homework_005/moon.gif");//
 }
 
 Mesh.prototype.translate = function(axis, value) { 
@@ -791,12 +791,14 @@ function setupGUI() {
 		newPerspectiveOn: false,
 		newLightAnimationOn: true,
 		newWireframesOn: false,
-		newAttenuationOn: true
+		newAttenuationOn: true,
+		newApplyTexture: applyTexture
 	};
 
 	gui.datGui = new dat.GUI();
-	gui.f0 = gui.datGui.addFolder('Add');
-	gui.f0.add(gui.effectController, "newAddSphere").name("Add Sphere");
+	gui.f0 = gui.datGui.addFolder('Textures');
+	gui.f0.add(gui.effectController, "newApplyTexture").name("Apply Texture");
+	//gui.f0.add(gui.effectController, "newAddSphere").name("Add Sphere");
 	//gui.f0.add(gui.effectController, "newAddCylinder").name("Add Cylinder");
 	//gui.f0.add(gui.effectController, "newAddCone").name("Add Cone");
 	gui.f1 = gui.datGui.addFolder('Current');
@@ -864,7 +866,7 @@ function setupGUI() {
 		}
 	});
 	gui.f3 = gui.datGui.addFolder('Extras');
-	gui.f3.add(gui.effectController, "newUndo").name("Undo Add");
+	//gui.f3.add(gui.effectController, "newUndo").name("Undo Add");
 	gui.f3.add(gui.effectController, "newOutputToConsole").name("Console Print");
 	gui.f3.add( gui.effectController, "newRenderActiveOnly").name("Active Only").onChange(function(value) {
 		if (gui.effectController.newRenderActiveOnly != bRenderActiveOnly) {
@@ -912,6 +914,12 @@ function setupGUI() {
 	lights[1].ui.color = vec3(1.0, 1.0, 1.0);
 	lights[1].ui.translate = vec3(-0.7, -1.0, 1.0);
 	lights[1].ui.bOn = true;
+	addSphere();
+}
+
+function applyTexture() {
+	geomObjects[3].initTexture("Homework_005/moon.gif");
+	bUpdate = true;
 }
 
 function addSphere() {
