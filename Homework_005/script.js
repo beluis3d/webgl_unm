@@ -917,7 +917,11 @@ function setupGUI() {
 	addSphere();
 }
 
+var bApplyTexture = false;
 function applyTexture() {
+	if (bApplyTexture) return;
+	bApplyTexture = true;
+
 	geomObjects[3].initTexture("Homework_005/moon.gif");
 	bUpdate = true;
 }
