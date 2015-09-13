@@ -3,6 +3,7 @@ var VSHADER_SOURCE =
     "// vertex.shader\n" +
     "attribute vec4 a_Location;\n" +
     "attribute vec4 a_Normal;\n" +
+    "attribute vec2 a_Texel;\n" + 
     "uniform mat4 a_Model;\n" +
     "uniform mat4 a_View;\n" +
     "uniform mat4 a_Projection;\n" + 
@@ -10,6 +11,7 @@ var VSHADER_SOURCE =
     "varying vec3 v_Position;\n" + 
     "varying vec3 v_Normal;\n" +
     "varying vec3 v_eyeDirection;\n" +
+    "varying vec2 v_Texel;\n" + 
     "void main() {\n" +
     "	gl_Position = a_Projection * a_View * a_Model * a_Location;\n" +
     "   vec4 eyeLocation = (a_View * a_Model * a_Location);\n" +
@@ -18,6 +20,7 @@ var VSHADER_SOURCE =
     "   v_eyeDirection = normalize((vec4(0.0, 0.0, 0.0, 0.0) - eyeLocation).xyz);\n" +
     "   v_Position = (a_Model * a_Location).xyz;\n" +
     "   v_Normal = vec3(a_NormalMatrix * a_Normal);\n" + 
+    "   v_Texel = a_Texel;\n" + 
     "}\n" +
     "";
 
@@ -42,9 +45,11 @@ var FSHADER_SOURCE =
     "uniform vec3 u_LightColor[2];\n" +
     "uniform vec3 u_LightLocation[2];\n" +
     "uniform float u_AttenuationOn;\n" +
+    "uniform sampler2D u_Sampler;\n" + 
     "varying vec3 v_Position;\n" + 
     "varying vec3 v_Normal;\n" +
-    "varying vec3 v_eyeDirection;\n" + 
+    "varying vec3 v_eyeDirection;\n" +
+    "varying vec2 v_Texel;\n" + 
     "void main() {\n" +
     "   vec3 colorSum = vec3(0.0, 0.0, 0.0);\n" +
     "   vec3 normal = normalize(v_Normal);\n" + 
@@ -67,6 +72,7 @@ var FSHADER_SOURCE =
     "   vec3 ambientColor = vec3(0.2, 0.2, 0.2);\n" + 
     "   colorSum += ambientColor;\n" + 
     "	gl_FragColor = vec4(colorSum, u_MaterialColor.a);\n" +
+    "   gl_FragColor = texture2D(u_Sampler, v_Texel);\n" + 
     "}\n" +
     "";
 

@@ -161,6 +161,10 @@ var Mesh = function(id, className, camera, lights) {
 	this.topFaceNormals = [];
 	this.materialColor = vec3(Math.random(), Math.random(), Math.random());
 
+	this.sphereTexels = [];
+	this.botSphereTexels = [];
+	this.topSphereTexels = [];
+
 	this.wire = {
 		curves: [],
 		points: [],
@@ -172,8 +176,10 @@ var Mesh = function(id, className, camera, lights) {
 		//a_Transformation: undefined,   // shader field for model transformation
 		this.si1.vBufferId = undefined;  // shader buffer for the points		
 		this.si1.nBufferId = undefined;  // shader buffer for the normals
+		this.si1.tBufferId = undefined;  // shader buffer for the texels
 		this.si1.a_Location = undefined; // shader field for location of vertex	
 		this.si1.a_Normal = undefined;   // shader field for normal of the vertex
+		this.si1.a_Texel = undefined;    // shader field for texel of the vertex
 		this.si1.a_NormalMatrix = undefined; // shader field for normal transformation
 		this.si1.u_MaterialColor = undefined; // shader field for material color
 	//};
@@ -219,6 +225,12 @@ Mesh.prototype.setupData = function() {
 	gl.vertexAttribPointer(this.si1.a_Normal, 3, gl.FLOAT, false, 0, 0);
 	gl.enableVertexAttribArray(this.si1.a_Normal);
 
+	this.si1.tBufferId = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.tBufferId);
+	this.si1.a_Texel = gl.getAttribLocation(gl.program, "a_Texel");
+	gl.vertexAttribPointer(this.si1.a_Texel, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(this.si1.a_Texel);
+
 	this.si1.a_Transformation = gl.getUniformLocation(gl.program, "a_Model");
 	this.si2.a_Transformation = gl.getUniformLocation(gl.program2, "a_Model");
 
@@ -237,6 +249,8 @@ Mesh.prototype.setupData = function() {
 		this.lights[i].si1.u_AttenuationOn = gl.getUniformLocation(gl.program, "u_AttenuationOn");
 		this.lights[i].si1.a_Transformation = gl.getUniformLocation(gl.program, "u_LightLocation");
 	}
+
+	this.initTexture("Homework_005/moon.gif");
 }
 
 Mesh.prototype.translate = function(axis, value) { 
@@ -285,10 +299,13 @@ Mesh.prototype.render = function() {
 	//---
 	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
 	var allFaceNormals = this.faceNormals.concat(this.botFaceNormals).concat(this.topFaceNormals);
+	var allSphereTexels = this.sphereTexels.concat(this.botSphereTexels).concat(this.topSphereTexels);
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.vBufferId);
 	gl.bufferData(gl.ARRAY_BUFFER, flatten(allSolidPoints), gl.STATIC_DRAW);
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.nBufferId);
 	gl.bufferData(gl.ARRAY_BUFFER, flatten(allFaceNormals), gl.STATIC_DRAW);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.tBufferId);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(allSphereTexels), gl.STATIC_DRAW);
 	
 	gl.uniformMatrix4fv( this.si1.a_Transformation, false, flatten(this.tp.transform) ); // Model Matrix
 	gl.uniformMatrix4fv( this.camera.si1.a_Transformation, false, flatten(this.camera.tp.transform) ); // View Matrix
@@ -314,6 +331,8 @@ Mesh.prototype.render = function() {
 	gl.vertexAttribPointer(this.si1.a_Location, 3, gl.FLOAT, false, 0, 0);
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.nBufferId);
 	gl.vertexAttribPointer(this.si1.a_Normal, 3, gl.FLOAT, false, 0, 0);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.tBufferId);
+	gl.vertexAttribPointer(this.si1.a_Texel, 2, gl.FLOAT, false, 0, 0);
 	for (var i = 0; i < this.solid.curves.length; i++) {
 		gl.drawArrays(gl.TRIANGLE_STRIP, this.solid.curves[i].start, this.solid.curves[i].size);	
 	}
@@ -457,10 +476,13 @@ Sphere.prototype.createPoints = function() {
 			var p2 = polarToCartesian(radius,i,k-dk);
 			var n1 = polarToCartesianNormal(i,k);
 			var n2 = polarToCartesianNormal(i,k-dk);
+			var t1 = polarToTexel(i,k);
+			var t2 = polarToTexel(i,k-dk);
 			
 			kCurve.size+=2;
 			this.solid.points.push( p1, p2 );
 			this.faceNormals.push( n1, n2 );
+			this.sphereTexels.push( t1, t2 );
 		}
 		this.solid.curves.push( kCurve );
 	}
@@ -468,21 +490,29 @@ Sphere.prototype.createPoints = function() {
 	this.solid.botPoints = [botPoint];
 	var botNormal = polarToCartesianNormal(0.0,180.0);
 	this.botFaceNormals = [botNormal];
+	var botTexel = polarToTexel(0.0,180.0);
+	this.botSphereTexels = [botTexel];
 	for(var i = 0; i <= 360.0; i+=di) {
 		var p1 = polarToCartesian(radius,i,180.0-dk);
 		this.solid.botPoints.push(p1);
 		var n1 = polarToCartesianNormal(i,180.0-dk);
 		this.botFaceNormals.push(n1);
+		var t1 = polarToTexel(i,180.0-dk);
+		this.botSphereTexels.push(t1);
 	}
 	var topPoint = polarToCartesian(radius,0.0,0.0);
 	this.solid.topPoints = [topPoint];
 	var topNormal = polarToCartesianNormal(0.0,0.0);
 	this.topFaceNormals = [topNormal];
+	var topTexel = polarToTexel(0.0,0.0);
+	this.topSphereTexels = [topTexel];
 	for(var i = 0; i <= 360.0; i+=di) {
 		var p1 = polarToCartesian(radius,i,0.0+dk);
 		this.solid.topPoints.push(p1);
 		var n1 = polarToCartesianNormal(i,0.0+dk);
 		this.topFaceNormals.push(n1);
+		var t1 = polarToTexel(i,0.0+dk);
+		this.topSphereTexels.push(t1);
 	}
 
 
@@ -514,22 +544,22 @@ Sphere.prototype.createPoints = function() {
 	}
 }
 
-Sphere.prototype.initTexture = function(filename) {
+Mesh.prototype.initTexture = function(filename) {
     var texture = gl.createTexture();
-    var u_Sampler = gl.getUniformLocation(program, 'u_Sampler');
+    var u_Sampler = gl.getUniformLocation(gl.program, "u_Sampler");
 	var fileImage = new Image();
 
-    this.fileImage.onload = function() {
-        configureTexture( texture, u_Sampler, fileImage );
+    fileImage.onload = function() {
+        loadTexture( texture, u_Sampler, fileImage );
         bUpdate = true;
     };
-    this.fileImage.onerror = function() {
-    	console.error('Unable to load image: ' + textureFileUrl);
+    fileImage.onerror = function() {
+    	console.error('Unable to load image: ' + filename);
     };
-    this.fileImage.src = filename;
+    fileImage.src = filename;
 }
 
-Sphere.prototype.loadTexture = function(texture, u_Sampler, image) {
+var loadTexture = function(texture, u_Sampler, image) {
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -1013,6 +1043,10 @@ function polarToCartesianNormal(theta, phi) {
 	var y = Math.sin(radians(theta))*Math.sin(radians(phi));
 	var z = Math.cos(radians(phi));
 	return vec3(x,y,z);
+}
+
+function polarToTexel(theta, phi) {
+	return vec2(1.0-theta/360.0, 1.0-phi/180.0);
 }
 
 function polarToCartesian2D(radius, theta, height) {
