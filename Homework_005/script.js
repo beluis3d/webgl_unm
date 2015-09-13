@@ -165,6 +165,10 @@ var Mesh = function(id, className, camera, lights) {
 	this.botSphereTexels = [];
 	this.topSphereTexels = [];
 
+	this.planeTexels = [];
+	this.botPlaneTexels = [];
+	this.topPlaneTexels = [];
+
 	this.wire = {
 		curves: [],
 		points: [],
@@ -299,7 +303,7 @@ Mesh.prototype.render = function() {
 	//---
 	var allSolidPoints = this.solid.points.concat(this.solid.botPoints).concat(this.solid.topPoints);
 	var allFaceNormals = this.faceNormals.concat(this.botFaceNormals).concat(this.topFaceNormals);
-	var allSphereTexels = this.sphereTexels.concat(this.botSphereTexels).concat(this.topSphereTexels);
+	var allSphereTexels = (bApplyPlaneMapping) ? this.planeTexels : this.sphereTexels.concat(this.botSphereTexels).concat(this.topSphereTexels);
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.vBufferId);
 	gl.bufferData(gl.ARRAY_BUFFER, flatten(allSolidPoints), gl.STATIC_DRAW);
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.si1.nBufferId);
@@ -478,11 +482,14 @@ Sphere.prototype.createPoints = function() {
 			var n2 = polarToCartesianNormal(i,k-dk);
 			var t1 = polarToTexel(i,k);
 			var t2 = polarToTexel(i,k-dk);
+			var tp1 = vec2(n1[0], n1[1]);
+			var tp2 = vec2(n2[0], n2[1]);
 			
 			kCurve.size+=2;
 			this.solid.points.push( p1, p2 );
 			this.faceNormals.push( n1, n2 );
 			this.sphereTexels.push( t1, t2 );
+			this.planeTexels.push( tp1, tp2 );
 		}
 		this.solid.curves.push( kCurve );
 	}
@@ -492,6 +499,9 @@ Sphere.prototype.createPoints = function() {
 	this.solid.topPoints = [];
 	this.topFaceNormals = [];
 	this.topSphereTexels = [];
+
+	this.botPlaneTexels = []; // TODO: add this to below
+	this.topPlaneTexels = []; // TODO: add this to below
 	/*
 	var botPoint = polarToCartesian(radius,0.0,180.0);
 	this.solid.botPoints = [botPoint];
@@ -792,12 +802,14 @@ function setupGUI() {
 		newLightAnimationOn: true,
 		newWireframesOn: false,
 		newAttenuationOn: true,
-		newApplyTexture: applyTexture
+		newApplyTexture: applyTexture,
+		newApplyPlaneMapping: applyPlaneMapping
 	};
 
 	gui.datGui = new dat.GUI();
 	gui.f0 = gui.datGui.addFolder('Textures');
-	gui.f0.add(gui.effectController, "newApplyTexture").name("Apply Texture");
+	gui.f0.add(gui.effectController, "newApplyTexture").name("Apply Image File");
+	gui.f0.add(gui.effectController, "newApplyPlaneMapping").name("Plane Mapping");
 	//gui.f0.add(gui.effectController, "newAddSphere").name("Add Sphere");
 	//gui.f0.add(gui.effectController, "newAddCylinder").name("Add Cylinder");
 	//gui.f0.add(gui.effectController, "newAddCone").name("Add Cone");
@@ -923,6 +935,14 @@ function applyTexture() {
 	bApplyTexture = true;
 
 	geomObjects[3].initTexture("Homework_005/moon.gif");
+	bUpdate = true;
+}
+
+var bApplyPlaneMapping = false;
+function applyPlaneMapping() {
+	if (bApplyPlaneMapping) return;
+	
+	bApplyPlaneMapping = true;
 	bUpdate = true;
 }
 
