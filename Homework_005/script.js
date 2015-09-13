@@ -250,7 +250,7 @@ Mesh.prototype.setupData = function() {
 		this.lights[i].si1.a_Transformation = gl.getUniformLocation(gl.program, "u_LightLocation");
 	}
 
-	this.initTexture("Homework_005/moon.gif");
+	this.initTexture("Homework_005/moon.gif");//this.initTextureCheckerboard();//
 }
 
 Mesh.prototype.translate = function(axis, value) { 
@@ -469,7 +469,7 @@ Sphere.prototype.createPoints = function() {
 	var radius = 1.0;
 
 	// Triangle Points
-	for (var k = 180.0-dk; k > 0.0+dk; k-=dk) {
+	for (var k = 180.0-0.0; k > 0.0+0.0; k-=dk) {//for (var k = 180.0-dk; k > 0.0+dk; k-=dk) {
 		var kCurve = { start: this.solid.points.length, size: 0 };
 		for (var i = 0.0; i <= 360.0; i+=di) {
 			var p1 = polarToCartesian(radius,i,k);
@@ -486,6 +486,13 @@ Sphere.prototype.createPoints = function() {
 		}
 		this.solid.curves.push( kCurve );
 	}
+	this.solid.botPoints = [];
+	this.botFaceNormals = [];
+	this.botSphereTexels = [];
+	this.solid.topPoints = [];
+	this.topFaceNormals = [];
+	this.topSphereTexels = [];
+	/*
 	var botPoint = polarToCartesian(radius,0.0,180.0);
 	this.solid.botPoints = [botPoint];
 	var botNormal = polarToCartesianNormal(0.0,180.0);
@@ -514,6 +521,7 @@ Sphere.prototype.createPoints = function() {
 		var t1 = polarToTexel(i,0.0+dk);
 		this.topSphereTexels.push(t1);
 	}
+	*/
 
 
 	//Wire Points
@@ -559,13 +567,47 @@ Mesh.prototype.initTexture = function(filename) {
     fileImage.src = filename;
 }
 
-var loadTexture = function(texture, u_Sampler, image) {
+Mesh.prototype.initTextureCheckerboard = function() {
+	var texture = gl.createTexture();
+    var u_Sampler = gl.getUniformLocation(gl.program, "u_Sampler");
+	
+    var steps = 64;
+    var checks = 8;
+    var sdc = steps/checks;
+	var patternImage = new Uint8Array(4*steps*steps);
+    
+    for (var i = 0; i < steps; i++) {
+        for (var j = 0; j < steps; j++) {
+        	var bX = Math.floor(i/sdc) % 2 == 1;
+          	var bY = Math.floor(j/sdc) % 2 == 1;
+
+          	if ( (bX&&(!bY)) || ((!bX)&&bY) ) {
+            	patternImage[4*i*steps+4*j] = 255;
+          		patternImage[4*i*steps+4*j+1] = 0;
+          		patternImage[4*i*steps+4*j+2] = 0;
+          		patternImage[4*i*steps+4*j+3] = 255;
+          	} else {
+            	patternImage[4*i*steps+4*j] = 0;
+          		patternImage[4*i*steps+4*j+1] = 255;
+          		patternImage[4*i*steps+4*j+2] = 0;
+          		patternImage[4*i*steps+4*j+3] = 255;
+          	}
+        }
+    }
+
+    loadTexture(texture, u_Sampler, patternImage, steps);
+}
+
+var loadTexture = function(texture, u_Sampler, image, steps) {
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image); 
+	if (steps === undefined)
+    	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+	else
+    	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, steps, steps, 0, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
     gl.uniform1i(u_Sampler, 0);
 }
