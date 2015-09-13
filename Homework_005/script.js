@@ -514,6 +514,32 @@ Sphere.prototype.createPoints = function() {
 	}
 }
 
+Sphere.prototype.initTexture = function(filename) {
+    var texture = gl.createTexture();
+    var u_Sampler = gl.getUniformLocation(program, 'u_Sampler');
+	var fileImage = new Image();
+
+    this.fileImage.onload = function() {
+        configureTexture( texture, u_Sampler, fileImage );
+        bUpdate = true;
+    };
+    this.fileImage.onerror = function() {
+    	console.error('Unable to load image: ' + textureFileUrl);
+    };
+    this.fileImage.src = filename;
+}
+
+Sphere.prototype.loadTexture = function(texture, u_Sampler, image) {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture( gl.TEXTURE_2D, this.texture );
+    
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image ); 
+
+    gl.uniform1i(u_Sampler, 0);
+}
+
 // --- End: Sphere Class --- //
 
 
