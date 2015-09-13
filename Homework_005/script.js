@@ -809,7 +809,7 @@ function setupGUI() {
 	gui.datGui = new dat.GUI();
 	gui.f0 = gui.datGui.addFolder('Textures');
 	gui.f0.add(gui.effectController, "newApplyTexture").name("Apply Image File");
-	gui.f0.add(gui.effectController, "newApplyPlaneMapping").name("Plane Mapping");
+	gui.f0.add(gui.effectController, "newApplyPlaneMapping").name("Planar Mapping");
 	//gui.f0.add(gui.effectController, "newAddSphere").name("Add Sphere");
 	//gui.f0.add(gui.effectController, "newAddCylinder").name("Add Cylinder");
 	//gui.f0.add(gui.effectController, "newAddCone").name("Add Cone");
